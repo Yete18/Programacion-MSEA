@@ -1,0 +1,553 @@
+/* ============================================================
+   MSEA — ESTILOS LOGIN
+   Paleta: Verde lechuga + Blanco
+   Layout: Dos columnas (panel decorativo | formulario)
+   ============================================================ */
+
+/* ── VARIABLES (mismas del sistema) ── */
+:root {
+  --verde-principal: #8CC63F;
+  --verde-claro:     #A8D858;
+  --verde-oscuro:    #6BA02E;
+  --verde-suave:     #E8F5D0;
+  --verde-fondo:     #F2FAE8;
+  --blanco:          #FFFFFF;
+  --gris-texto:      #4A4A4A;
+  --gris-suave:      #888888;
+  --gris-input:      #F7F7F7;
+  --borde-input:     #DDDDDD;
+  --amarillo:        #FFD54F;
+  --rojo-error:      #FF5252;
+  --verde-ok:        #43A047;
+  --sombra-verde:    rgba(140, 198, 63, 0.25);
+  --sombra-card:     rgba(0, 0, 0, 0.08);
+  --radio-btn:       50px;
+  --radio-card:      24px;
+  --radio-input:     14px;
+  --transicion:      0.3s ease;
+}
+
+/* ── RESET ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background-color: var(--verde-fondo);
+  color: var(--gris-texto);
+  min-height: 100vh;
+}
+
+/* ── LAYOUT PRINCIPAL: dos columnas ── */
+.login-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   PANEL IZQUIERDO — Decorativo
+   ============================================================ */
+.login-panel {
+  position: relative;
+  background: linear-gradient(150deg, var(--verde-oscuro) 0%, var(--verde-principal) 60%, var(--verde-claro) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 40px;
+}
+
+/* Partículas dentro del panel */
+.panel-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.panel-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  animation: panelFloat linear infinite;
+}
+
+@keyframes panelFloat {
+  0%   { transform: translateY(100%) rotate(0deg);   opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-120px) rotate(360deg); opacity: 0; }
+}
+
+/* Contenido del panel */
+.panel-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+}
+
+/* Logo en el panel */
+.panel-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.panel-logo-img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  border-radius: 40px;
+  background: rgba(255,255,255,0.25);
+  padding: 6px;
+}
+
+.panel-logo-text {
+  font-family: 'Baloo 2', cursive;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--blanco);
+  letter-spacing: 3px;
+}
+
+/* Ilustración circular */
+.panel-illustration {
+  position: relative;
+  width: 400px;
+  height: 400px;
+}
+
+.panel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 5px solid rgba(255,255,255,0.4);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.1);
+}
+
+/* Fallback si no hay imagen */
+.panel-img-fallback {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: 5rem;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 5px solid rgba(255,255,255,0.4);
+}
+
+.panel-img.error + .panel-img-fallback {
+  display: flex;
+}
+
+/* Texto motivador */
+.panel-title {
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--blanco);
+}
+
+.panel-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.85);
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+/* Íconos flotantes del panel */
+.p-float {
+  position: absolute;
+  font-size: 1.8rem;
+  animation: pfloat 3.5s ease-in-out infinite;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
+  user-select: none;
+  z-index: 1;
+}
+
+.pf-1 { top: 12%;  left: 10%;  animation-delay: 0s;    animation-duration: 3.2s; }
+.pf-2 { top: 20%;  right: 8%;  animation-delay: 0.8s;  animation-duration: 2.9s; }
+.pf-3 { bottom: 18%; left: 12%; animation-delay: 1.4s; animation-duration: 3.6s; }
+.pf-4 { bottom: 25%; right: 10%; animation-delay: 0.4s; animation-duration: 4s; }
+
+@keyframes pfloat {
+  0%, 100% { transform: translateY(0) rotate(-6deg); }
+  50%       { transform: translateY(-20px) rotate(6deg); }
+}
+
+/* ============================================================
+   PANEL DERECHO — Formulario
+   ============================================================ */
+.login-form-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
+  background: var(--blanco);
+  position: relative;
+  overflow-y: auto;
+}
+
+/* Botón volver (visible en móvil) */
+.back-link {
+  display: none;
+  align-self: flex-start;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--verde-oscuro);
+  text-decoration: none;
+  margin-bottom: 20px;
+  gap: 6px;
+  align-items: center;
+  transition: color var(--transicion);
+}
+
+.back-link:hover { color: var(--verde-principal); }
+
+/* Tarjeta del formulario */
+.form-container {
+  width: 100%;
+  max-width: 440px;
+  animation: fadeInUp 0.6s ease both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Encabezado */
+.form-header {
+  margin-bottom: 32px;
+}
+
+.form-title {
+  font-family: 'Baloo 2', cursive;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--gris-texto);
+  margin-bottom: 6px;
+}
+
+.form-subtitle {
+  font-size: 1rem;
+  color: var(--gris-suave);
+  font-weight: 600;
+}
+
+/* ── SELECTOR DE ROL ── */
+.role-selector {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.role-btn {
+  flex: 1;
+  min-width: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 10px;
+  border-radius: 16px;
+  border: 2.5px solid var(--borde-input);
+  background: var(--gris-input);
+  cursor: pointer;
+  transition: border-color var(--transicion),
+              background-color var(--transicion),
+              transform var(--transicion),
+              box-shadow var(--transicion);
+  font-family: 'Nunito', sans-serif;
+}
+
+.role-btn:hover {
+  border-color: var(--verde-claro);
+  background: var(--verde-fondo);
+  transform: translateY(-3px);
+}
+
+.role-btn.active {
+  border-color: var(--verde-principal);
+  background: var(--verde-suave);
+  box-shadow: 0 4px 16px var(--sombra-verde);
+}
+
+.role-icon { font-size: 1.6rem; line-height: 1; }
+
+.role-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gris-texto);
+  letter-spacing: 0.3px;
+}
+
+/* ── GRUPOS DE CAMPO ── */
+.field-group {
+  margin-bottom: 20px;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--gris-texto);
+  margin-bottom: 8px;
+}
+
+.label-icon { font-size: 1rem; }
+
+/* Wrapper del input (contiene input + ícono de estado) */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Input base */
+.field-input {
+  width: 100%;
+  padding: 14px 46px 14px 18px;
+  border-radius: var(--radio-input);
+  border: 2px solid var(--borde-input);
+  background: var(--gris-input);
+  font-family: 'Nunito', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gris-texto);
+  transition: border-color var(--transicion),
+              box-shadow var(--transicion),
+              background-color var(--transicion);
+  outline: none;
+}
+
+.field-input::placeholder {
+  color: #BBBBBB;
+  font-weight: 400;
+}
+
+.field-input:focus {
+  border-color: var(--verde-principal);
+  background: var(--blanco);
+  box-shadow: 0 0 0 4px rgba(140, 198, 63, 0.15);
+}
+
+/* Estado válido */
+.field-input.valid {
+  border-color: var(--verde-ok);
+}
+
+/* Estado inválido */
+.field-input.invalid {
+  border-color: var(--rojo-error);
+  box-shadow: 0 0 0 4px rgba(255, 82, 82, 0.1);
+}
+
+/* Ícono de estado dentro del input */
+.input-status {
+  position: absolute;
+  right: 14px;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+/* Toggle contraseña */
+.toggle-password {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 4px;
+  line-height: 1;
+  transition: transform var(--transicion);
+  user-select: none;
+}
+
+.toggle-password:hover {
+  transform: scale(1.2);
+}
+
+/* Mensaje de error por campo */
+.field-error {
+  font-size: 0.82rem;
+  color: var(--rojo-error);
+  font-weight: 600;
+  margin-top: 5px;
+  min-height: 18px;
+  animation: shakeIn 0.3s ease;
+}
+
+@keyframes shakeIn {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-6px); }
+  75%       { transform: translateX(6px); }
+}
+
+/* ── OPCIONES DEL FORM ── */
+.form-options {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+  margin-top: -8px;
+}
+
+.forgot-link {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--verde-oscuro);
+  text-decoration: none;
+  transition: color var(--transicion);
+}
+
+.forgot-link:hover {
+  color: var(--verde-principal);
+  text-decoration: underline;
+}
+
+/* ── BOTÓN LOGIN ── */
+.btn-login {
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--radio-btn);
+  border: none;
+  background: var(--verde-principal);
+  color: var(--blanco);
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px var(--sombra-verde),
+              0 2px 0 var(--verde-oscuro);
+  transition: transform var(--transicion),
+              box-shadow var(--transicion),
+              background-color var(--transicion);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-login:hover {
+  background: var(--verde-claro);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px var(--sombra-verde),
+              0 2px 0 var(--verde-oscuro);
+}
+
+.btn-login:active {
+  transform: translateY(0);
+}
+
+.btn-login:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── ALERTA GENERAL ── */
+.form-alert {
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: center;
+  animation: fadeInUp 0.3s ease;
+}
+
+.form-alert.error {
+  background: rgba(255, 82, 82, 0.1);
+  color: var(--rojo-error);
+  border: 1.5px solid rgba(255, 82, 82, 0.3);
+}
+
+.form-alert.success {
+  background: rgba(140, 198, 63, 0.1);
+  color: var(--verde-oscuro);
+  border: 1.5px solid rgba(140, 198, 63, 0.3);
+}
+
+/* ── PIE DEL FORMULARIO ── */
+.form-footer {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--gris-suave);
+  font-weight: 600;
+}
+
+.register-link {
+  color: var(--verde-oscuro);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color var(--transicion);
+}
+
+.register-link:hover {
+  color: var(--verde-principal);
+  text-decoration: underline;
+}
+
+/* ── RESPONSIVE — TABLET ── */
+@media (max-width: 860px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .login-panel {
+    display: none; /* Panel oculto en móvil */
+  }
+
+  .login-form-section {
+    justify-content: flex-start;
+    padding: 32px 24px;
+  }
+
+  .back-link {
+    display: flex;
+  }
+
+  .form-container {
+    margin: auto;
+  }
+}
+
+/* ── RESPONSIVE — MÓVIL ── */
+@media (max-width: 480px) {
+  .login-form-section {
+    padding: 24px 16px;
+  }
+
+  .form-title {
+    font-size: 1.7rem;
+  }
+
+  .role-selector {
+    gap: 8px;
+  }
+
+  .role-btn {
+    padding: 10px 8px;
+  }
+}
