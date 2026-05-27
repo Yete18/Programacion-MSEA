@@ -2,21 +2,26 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeedsMseaCatalogs;
 use Tests\TestCase;
 
 class DashboardAdminTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
+    use SeedsMseaCatalogs;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedMseaCatalogs();
+    }
 
     public function test_director_puede_ver_panel_admin(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
-
         $idDirector = DB::table('usuarios')->insertGetId([
             'correo' => 'director.panel.'.time().'@msea.test',
             'contrasena' => Hash::make('secret123'),
@@ -30,16 +35,13 @@ class DashboardAdminTest extends TestCase
             'rol' => 'director',
         ])->get('/dashboard-admin')
             ->assertOk()
-            ->assertSee('Gestión de profesores')
+            ->assertSee('Centralizador general')
+            ->assertSee('Elencos y orquestas')
             ->assertSee('Registrar profesor');
     }
 
     public function test_director_puede_registrar_profesor(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
-
         $idDirector = DB::table('usuarios')->insertGetId([
             'correo' => 'director.crea.'.time().'@msea.test',
             'contrasena' => Hash::make('secret123'),

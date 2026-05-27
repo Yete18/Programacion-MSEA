@@ -2,21 +2,26 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeedsMseaCatalogs;
 use Tests\TestCase;
 
 class DashboardProfesorTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
+    use SeedsMseaCatalogs;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedMseaCatalogs();
+    }
 
     public function test_dashboard_profesor_renderiza_datos_de_base_de_datos(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
-
         $idProfesorUsuario = DB::table('usuarios')->insertGetId([
             'correo' => 'profesor.dashboard.'.time().'@msea.test',
             'contrasena' => Hash::make('secret123'),

@@ -268,7 +268,7 @@ async function saveProfile(foto = null) {
   if (!foto) delete estudiante.foto;
   Object.assign(ESTUDIANTE, estudiante);
   applyStudentData();
-  if (foto) applyAvatarEverywhere(foto);
+  if (foto) applyAvatarEverywhere(estudiante.foto || foto);
   return data;
 }
 

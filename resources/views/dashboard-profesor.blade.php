@@ -173,6 +173,7 @@
     </div>
     <div class="field-group"><label class="field-label" for="tarea-fecha">📅 Fecha límite</label><input type="date" id="tarea-fecha" class="field-input" /><p class="field-error" id="err-fecha"></p></div>
     <div class="field-group"><label class="field-label" for="tarea-desc">📄 Descripción / instrucciones</label><textarea id="tarea-desc" class="field-input field-textarea" placeholder="Describe qué debe hacer el alumno..."></textarea></div>
+    <div class="field-group"><label class="field-label" for="tarea-archivo">🎼 Partitura, audio o material</label><input type="file" id="tarea-archivo" class="field-input" accept=".pdf,.mp3,.wav,.m4a,.jpg,.jpeg,.png" /><p class="field-error">El backend guardara este archivo en ejercicios.archivo o en la tabla de entregables.</p></div>
   </div>
   <div class="modal-footer"><button class="btn-modal-cancel" id="btn-modal-cancel">Cancelar</button><button class="btn-modal-submit" id="btn-modal-submit"><span class="btn-text">Asignar tarea</span><span class="btn-loader" id="modal-loader" style="display:none">Guardando...</span></button></div>
 </div>

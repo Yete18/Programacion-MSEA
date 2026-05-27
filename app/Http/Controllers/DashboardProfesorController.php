@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ProfilePhotoService;
 use Illuminate\Support\Facades\DB;
 
 class DashboardProfesorController extends Controller
 {
-    public function show()
+    public function show(ProfilePhotoService $profilePhotoService)
     {
         if (session('rol') !== 'profesor') {
             return redirect('/login')->with('error', 'Inicia sesion como profesor para continuar');
@@ -34,6 +35,14 @@ class DashboardProfesorController extends Controller
             return redirect('/login')->with('error', 'No encontramos el perfil de profesor para este usuario');
         }
 
+        $driver = DB::connection()->getDriverName();
+        $instrumentosSql = $driver === 'pgsql'
+            ? "coalesce(string_agg(distinct i.nombre, ', '), 'Sin instrumento') as instrumento"
+            : "coalesce(group_concat(distinct i.nombre), 'Sin instrumento') as instrumento";
+        $completadasSql = $driver === 'pgsql'
+            ? "count(pr.id_progreso) filter (where pr.estado = 'completado') as completadas"
+            : "sum(case when pr.estado = 'completado' then 1 else 0 end) as completadas";
+
         $alumnos = DB::table('estudiantes as e')
             ->join('usuarios as u', 'u.id_usuario', '=', 'e.id_usuario')
             ->leftJoin('usuario_instrumento as ui', 'ui.id_usuario', '=', 'u.id_usuario')
@@ -45,9 +54,9 @@ class DashboardProfesorController extends Controller
                 'u.nombres',
                 'u.apellido_paterno',
                 'u.apellido_materno',
-                DB::raw("coalesce(string_agg(distinct i.nombre, ', '), 'Sin instrumento') as instrumento"),
+                DB::raw($instrumentosSql),
                 DB::raw('coalesce(sum(pr.puntaje), 0) as puntos'),
-                DB::raw("count(pr.id_progreso) filter (where pr.estado = 'completado') as completadas"),
+                DB::raw($completadasSql),
             ])
             ->groupBy('e.id_estudiante', 'u.nombres', 'u.apellido_paterno', 'u.apellido_materno')
             ->orderBy('u.apellido_paterno')
@@ -93,7 +102,7 @@ class DashboardProfesorController extends Controller
             'usuario' => 'prof_'.$profesor->id_profesor,
             'email' => $profesor->correo,
             'especialidad' => $especialidad,
-            'foto' => $profesor->foto,
+            'foto' => $profilePhotoService->publicValue($profesor->foto),
             'totalAlumnos' => $totalAlumnos,
             'tareasRevision' => 0,
             'tareasCompletadas' => $tareasCompletadas,

@@ -234,7 +234,9 @@ function initModalTarea() {
     await wait(500);
     btnSubmit.disabled = false;
     closeModal();
-    showToast(`Tarea "${titulo}" preparada para ${alumnoNombre.split('·')[0].trim()}. Falta guardar en BD.`);
+    const archivo = document.getElementById('tarea-archivo')?.files?.[0];
+    const extra = archivo ? ` con material "${archivo.name}"` : '';
+    showToast(`Tarea "${titulo}" preparada${extra} para ${alumnoNombre.split('·')[0].trim()}. Falta guardar en BD.`);
   });
 }
 
@@ -252,7 +254,7 @@ function validateModal() {
 }
 
 function resetModal() {
-  ['tarea-titulo','tarea-desc','tarea-instrumento'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['tarea-titulo','tarea-desc','tarea-instrumento','tarea-archivo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const alumno = document.getElementById('tarea-alumno');
   if (alumno) alumno.selectedIndex = 0;
   ['err-titulo','err-alumno','err-fecha'].forEach(id => setEl(id, ''));

@@ -23,13 +23,29 @@ Route::get('/registro', function () {
 
 Route::post('/registro', [AuthController::class, 'register']);
 
-Route::get('/dashboard-estudiante', [DashboardEstudianteController::class, 'show']);
-Route::post('/dashboard-estudiante/perfil', [DashboardEstudianteController::class, 'updateProfile']);
-Route::get('/dashboard-profesor', [DashboardProfesorController::class, 'show']);
-Route::get('/dashboard-admin', [DashboardAdminController::class, 'show']);
-Route::post('/dashboard-admin/profesores', [DashboardAdminController::class, 'storeProfesor']);
+Route::middleware('auth.session')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
 
-Route::post('/logout', [AuthController::class, 'logout']);
+    Route::middleware('role:estudiante')->group(function () {
+        Route::get('/dashboard-estudiante', [DashboardEstudianteController::class, 'show']);
+        Route::post('/dashboard-estudiante/perfil', [DashboardEstudianteController::class, 'updateProfile']);
+    });
+
+    Route::middleware('role:profesor')->group(function () {
+        Route::get('/dashboard-profesor', [DashboardProfesorController::class, 'show']);
+    });
+
+    Route::middleware('role:director')->group(function () {
+        Route::get('/dashboard-admin', [DashboardAdminController::class, 'show']);
+        Route::post('/dashboard-admin/perfil', [DashboardAdminController::class, 'updateProfile']);
+        Route::post('/dashboard-admin/profesores', [DashboardAdminController::class, 'storeProfesor']);
+        Route::post('/dashboard-admin/elencos', [DashboardAdminController::class, 'storeElenco']);
+        Route::put('/dashboard-admin/elencos/{idElenco}', [DashboardAdminController::class, 'updateElenco']);
+        Route::delete('/dashboard-admin/elencos/{idElenco}', [DashboardAdminController::class, 'destroyElenco']);
+        Route::post('/dashboard-admin/elencos/asignar-estudiante', [DashboardAdminController::class, 'assignStudentToElenco']);
+        Route::post('/dashboard-admin/profesores/asignar-estudiante', [DashboardAdminController::class, 'assignStudentToProfesor']);
+    });
+});
 
 Route::get('/forgot-password', [PasswordResetController::class, 'showRequestForm']);
 Route::post('/forgot-password', [PasswordResetController::class, 'sendCode']);

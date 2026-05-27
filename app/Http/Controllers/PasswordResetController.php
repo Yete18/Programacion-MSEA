@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ResetPasswordRequest;
+use App\Http\Requests\VerifyResetCodeRequest;
+use App\Services\PasswordResetService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 
 class PasswordResetController extends Controller
 {
@@ -14,40 +15,16 @@ class PasswordResetController extends Controller
         return view('forgot-password');
     }
 
-    public function sendCode(Request $request)
+    public function sendCode(ForgotPasswordRequest $request, PasswordResetService $passwordResetService)
     {
-        $validated = $request->validate([
-            'correo' => 'required|email',
-        ]);
+        $validated = $request->validated();
 
         $correo = strtolower($validated['correo']);
-        $usuario = DB::table('usuarios')->where('correo', $correo)->first();
 
         $request->session()->put('password_reset_correo', $correo);
         $request->session()->forget(['password_reset_verified', 'password_reset_code_id']);
 
-        if ($usuario) {
-            $codigo = (string) random_int(100000, 999999);
-
-            DB::table('password_reset_codes')
-                ->where('correo', $correo)
-                ->whereNull('used_at')
-                ->update(['used_at' => now()]);
-
-            DB::table('password_reset_codes')->insert([
-                'correo' => $correo,
-                'codigo' => Hash::make($codigo),
-                'expires_at' => now()->addMinutes(15),
-                'created_at' => now(),
-            ]);
-
-            Mail::raw(
-                "Tu codigo de verificacion MSEA es: {$codigo}\n\nEste codigo expira en 15 minutos.",
-                function ($message) use ($correo) {
-                    $message->to($correo)->subject('Codigo para restablecer tu contrasena MSEA');
-                }
-            );
-        }
+        $passwordResetService->enviarCodigoSiUsuarioExiste($correo);
 
         return redirect('/verify-code')
             ->with('success', 'Si el correo existe, enviamos un codigo de verificacion.');
@@ -64,11 +41,9 @@ class PasswordResetController extends Controller
         ]);
     }
 
-    public function verifyCode(Request $request)
+    public function verifyCode(VerifyResetCodeRequest $request, PasswordResetService $passwordResetService)
     {
-        $validated = $request->validate([
-            'codigo' => 'required|digits:6',
-        ]);
+        $validated = $request->validated();
 
         $correo = $request->session()->get('password_reset_correo');
 
@@ -76,20 +51,13 @@ class PasswordResetController extends Controller
             return redirect('/forgot-password');
         }
 
-        $codigos = DB::table('password_reset_codes')
-            ->where('correo', $correo)
-            ->whereNull('used_at')
-            ->where('expires_at', '>', now())
-            ->orderByDesc('created_at')
-            ->get();
+        $codigoId = $passwordResetService->verificarCodigo($correo, $validated['codigo']);
 
-        foreach ($codigos as $codigoGuardado) {
-            if (Hash::check($validated['codigo'], $codigoGuardado->codigo)) {
-                $request->session()->put('password_reset_verified', true);
-                $request->session()->put('password_reset_code_id', $codigoGuardado->id);
+        if ($codigoId) {
+            $request->session()->put('password_reset_verified', true);
+            $request->session()->put('password_reset_code_id', $codigoId);
 
-                return redirect('/reset-password');
-            }
+            return redirect('/reset-password');
         }
 
         return back()->with('error', 'El codigo no es valido o ya expiro.');
@@ -104,30 +72,20 @@ class PasswordResetController extends Controller
         return view('reset-password');
     }
 
-    public function resetPassword(Request $request)
+    public function resetPassword(ResetPasswordRequest $request, PasswordResetService $passwordResetService)
     {
         if (! $request->session()->get('password_reset_verified')) {
             return redirect('/forgot-password');
         }
 
-        $validated = $request->validate([
-            'contrasena' => 'required|min:6|confirmed',
-        ]);
+        $validated = $request->validated();
 
         $correo = $request->session()->get('password_reset_correo');
         $codigoId = $request->session()->get('password_reset_code_id');
 
-        DB::transaction(function () use ($correo, $codigoId, $validated) {
-            DB::table('usuarios')
-                ->where('correo', $correo)
-                ->update([
-                    'contrasena' => Hash::make($validated['contrasena']),
-                ]);
-
-            DB::table('password_reset_codes')
-                ->where('id', $codigoId)
-                ->update(['used_at' => now()]);
-        });
+        if (! $passwordResetService->resetPassword($correo, (int) $codigoId, $validated['contrasena'])) {
+            return redirect('/forgot-password')->with('error', 'El codigo no es valido o ya fue usado.');
+        }
 
         $request->session()->forget([
             'password_reset_correo',

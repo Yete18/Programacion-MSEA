@@ -2,21 +2,26 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeedsMseaCatalogs;
 use Tests\TestCase;
 
 class AuthFlowTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
+    use SeedsMseaCatalogs;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedMseaCatalogs();
+    }
 
     public function test_estudiante_puede_registrarse_e_ingresar_al_dashboard(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
-
         $correo = 'estudiante.test.'.time().'@msea.test';
 
         $this->post('/registro', [
@@ -62,10 +67,6 @@ class AuthFlowTest extends TestCase
 
     public function test_estudiante_con_contrasena_antigua_puede_iniciar_sesion_y_se_actualiza(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
-
         $correo = 'legacy.test.'.time().'@msea.test';
         $rol = DB::table('roles')->where('nombre', 'estudiante')->first();
         $seccion = DB::table('secciones')->where('nombre', 'General')->first();
@@ -106,12 +107,18 @@ class AuthFlowTest extends TestCase
         $this->assertTrue(Hash::check('1234', $contrasenaActualizada));
     }
 
+    public function test_login_rechaza_credenciales_invalidas(): void
+    {
+        $this->post('/login', [
+            'rol' => 'estudiante',
+            'correo' => 'no-existe@msea.test',
+            'contrasena' => 'incorrecta',
+        ])->assertRedirect('/')
+            ->assertSessionHas('error');
+    }
+
     public function test_registro_publico_no_permite_crear_profesores(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
-
         $correo = 'profesor.publico.'.time().'@msea.test';
 
         $this->post('/registro', [

@@ -2,145 +2,125 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
+use App\Http\Requests\AssignStudentToElencoRequest;
+use App\Http\Requests\AssignStudentToProfesorRequest;
+use App\Http\Requests\StoreElencoRequest;
+use App\Http\Requests\StoreProfesorRequest;
+use App\Http\Requests\UpdateDirectorProfileRequest;
+use App\Http\Requests\UpdateElencoRequest;
+use App\Services\AdminDashboardService;
 
 class DashboardAdminController extends Controller
 {
-    public function show()
+    public function show(AdminDashboardService $adminDashboardService)
     {
         if (session('rol') !== 'director') {
             return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
         }
 
-        return view('dashboard-admin', [
-            'adminData' => $this->adminData(),
-            'profesoresData' => $this->profesoresData(),
-        ]);
+        return view('dashboard-admin', $adminDashboardService->viewData((int) session('usuario_id')));
     }
 
-    public function storeProfesor(Request $request)
+    public function updateProfile(UpdateDirectorProfileRequest $request, AdminDashboardService $adminDashboardService)
     {
         if (session('rol') !== 'director') {
             return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
         }
 
-        $validated = $request->validate([
-            'nombres' => ['required', 'string', 'max:100'],
-            'apellido_paterno' => ['required', 'string', 'max:100'],
-            'apellido_materno' => ['nullable', 'string', 'max:100'],
-            'correo' => ['required', 'email', 'max:100', 'unique:usuarios,correo'],
-            'contrasena' => ['required', 'string', 'min:6', 'confirmed'],
-            'ci' => ['nullable', 'string', 'max:20'],
-            'celular' => ['nullable', 'string', 'max:20'],
-            'direccion' => ['nullable', 'string', 'max:500'],
-            'fecha_nacimiento' => ['nullable', 'date'],
-            'especialidad' => ['nullable', 'string', 'max:50'],
-        ]);
+        $guardoTrayectoria = $adminDashboardService->updateProfile((int) session('usuario_id'), $request->validated());
 
-        $rolProfesor = DB::table('roles')->where('nombre', 'profesor')->first();
+        $mensaje = $guardoTrayectoria
+            ? 'Perfil del director actualizado correctamente.'
+            : 'Perfil actualizado. La trayectoria queda pendiente hasta agregar la columna usuarios.trayectoria.';
 
-        if (! $rolProfesor) {
-            return back()->withInput()->with('error', 'No existe el rol profesor en la base de datos.');
+        return redirect('/dashboard-admin#perfil')->with('success', $mensaje);
+    }
+
+    public function storeProfesor(StoreProfesorRequest $request, AdminDashboardService $adminDashboardService)
+    {
+        if (session('rol') !== 'director') {
+            return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
         }
 
-        DB::transaction(function () use ($validated, $rolProfesor) {
-            $idUsuario = DB::table('usuarios')->insertGetId([
-                'correo' => $validated['correo'],
-                'contrasena' => Hash::make($validated['contrasena']),
-                'nombres' => $validated['nombres'],
-                'apellido_paterno' => $validated['apellido_paterno'],
-                'apellido_materno' => $validated['apellido_materno'] ?? null,
-                'ci' => $validated['ci'] ?? null,
-                'celular' => $validated['celular'] ?? null,
-                'direccion' => $validated['direccion'] ?? null,
-                'fecha_nacimiento' => $validated['fecha_nacimiento'] ?? null,
-                'id_rol' => $rolProfesor->id_rol,
-            ], 'id_usuario');
-
-            DB::table('profesores')->insert([
-                'id_usuario' => $idUsuario,
-            ]);
-
-            if (! empty($validated['especialidad'])) {
-                $idInstrumento = $this->obtenerOCrearInstrumento($validated['especialidad']);
-
-                DB::table('usuario_instrumento')->insertOrIgnore([
-                    'id_usuario' => $idUsuario,
-                    'id_instrumento' => $idInstrumento,
-                ]);
-            }
-        });
+        if (! $adminDashboardService->storeProfesor($request->validated())) {
+            return back()->withInput()->with('error', 'No existe el rol profesor en la base de datos.');
+        }
 
         return redirect('/dashboard-admin')->with('success', 'Profesor registrado correctamente.');
     }
 
-    private function adminData(): array
+    public function storeElenco(StoreElencoRequest $request, AdminDashboardService $adminDashboardService)
     {
-        $idUsuario = session('usuario_id');
-        $usuario = DB::table('usuarios')->where('id_usuario', $idUsuario)->first();
-        $totalProfesores = DB::table('profesores')->count();
-        $totalEstudiantes = DB::table('estudiantes')->count();
-
-        return [
-            'nombre' => $usuario ? trim($usuario->nombres.' '.$usuario->apellido_paterno) : 'Director',
-            'email' => $usuario->correo ?? 'Sin correo',
-            'totalProfesores' => $totalProfesores,
-            'totalEstudiantes' => $totalEstudiantes,
-        ];
-    }
-
-    private function profesoresData(): array
-    {
-        return DB::table('profesores as p')
-            ->join('usuarios as u', 'u.id_usuario', '=', 'p.id_usuario')
-            ->leftJoin('usuario_instrumento as ui', 'ui.id_usuario', '=', 'u.id_usuario')
-            ->leftJoin('instrumentos as i', 'i.id_instrumento', '=', 'ui.id_instrumento')
-            ->leftJoin('estudiantes as e', 'e.id_profesor', '=', 'p.id_profesor')
-            ->select([
-                'p.id_profesor',
-                'u.nombres',
-                'u.apellido_paterno',
-                'u.apellido_materno',
-                'u.correo',
-                'u.celular',
-                DB::raw("coalesce(string_agg(distinct i.nombre, ', '), 'Sin especialidad') as especialidad"),
-                DB::raw('count(distinct e.id_estudiante) as estudiantes'),
-            ])
-            ->groupBy('p.id_profesor', 'u.nombres', 'u.apellido_paterno', 'u.apellido_materno', 'u.correo', 'u.celular')
-            ->orderBy('u.apellido_paterno')
-            ->get()
-            ->map(fn ($profesor) => [
-                'id' => $profesor->id_profesor,
-                'nombre' => trim($profesor->nombres.' '.$profesor->apellido_paterno.' '.$profesor->apellido_materno),
-                'correo' => $profesor->correo,
-                'celular' => $profesor->celular ?: 'Sin celular',
-                'especialidad' => $profesor->especialidad,
-                'estudiantes' => (int) $profesor->estudiantes,
-            ])
-            ->all();
-    }
-
-    private function obtenerOCrearInstrumento(string $instrumento): int
-    {
-        $nombre = match (strtolower(trim($instrumento))) {
-            'violin' => 'Violin',
-            'viola' => 'Viola',
-            'chelo' => 'Chelo',
-            'bajo' => 'Bajo',
-            default => ucfirst(trim($instrumento)),
-        };
-
-        $existente = DB::table('instrumentos')->where('nombre', $nombre)->first();
-
-        if ($existente) {
-            return $existente->id_instrumento;
+        if (session('rol') !== 'director') {
+            return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
         }
 
-        return DB::table('instrumentos')->insertGetId([
-            'nombre' => $nombre,
-        ], 'id_instrumento');
+        $resultado = $adminDashboardService->storeElenco($request->validated());
+
+        if ($resultado !== true) {
+            return back()->withInput()->with('error', $resultado);
+        }
+
+        return redirect('/dashboard-admin#elencos')->with('success', 'Elenco registrado correctamente.');
+    }
+
+    public function updateElenco(UpdateElencoRequest $request, int $idElenco, AdminDashboardService $adminDashboardService)
+    {
+        if (session('rol') !== 'director') {
+            return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
+        }
+
+        $adminDashboardService->updateElenco($idElenco, $request->validated());
+
+        return redirect('/dashboard-admin#elencos')->with('success', 'Elenco actualizado correctamente.');
+    }
+
+    public function destroyElenco(int $idElenco, AdminDashboardService $adminDashboardService)
+    {
+        if (session('rol') !== 'director') {
+            return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
+        }
+
+        $adminDashboardService->destroyElenco($idElenco);
+
+        return redirect('/dashboard-admin#elencos')->with('success', 'Elenco eliminado. Sus estudiantes quedaron sin elenco asignado.');
+    }
+
+    public function assignStudentToElenco(AssignStudentToElencoRequest $request, AdminDashboardService $adminDashboardService)
+    {
+        if (session('rol') !== 'director') {
+            return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
+        }
+
+        $validated = $request->validated();
+        $resultado = $adminDashboardService->assignStudentToElenco(
+            (int) $validated['id_estudiante'],
+            $validated['id_elenco'] ?? null
+        );
+
+        if ($resultado !== true) {
+            return back()->with('error', $resultado);
+        }
+
+        return redirect('/dashboard-admin#elencos')->with('success', 'Estudiante asignado correctamente.');
+    }
+
+    public function assignStudentToProfesor(AssignStudentToProfesorRequest $request, AdminDashboardService $adminDashboardService)
+    {
+        if (session('rol') !== 'director') {
+            return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
+        }
+
+        $validated = $request->validated();
+        $resultado = $adminDashboardService->assignStudentToProfesor(
+            (int) $validated['id_estudiante'],
+            $validated['id_profesor'] ?? null
+        );
+
+        if ($resultado !== true) {
+            return back()->with('error', $resultado);
+        }
+
+        return redirect('/dashboard-admin#estudiantes')->with('success', 'Profesor asignado correctamente.');
     }
 }

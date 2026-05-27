@@ -2,21 +2,27 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\SeedsMseaCatalogs;
 use Tests\TestCase;
 
 class DashboardEstudianteTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
+    use SeedsMseaCatalogs;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedMseaCatalogs();
+    }
 
     public function test_dashboard_estudiante_renderiza_datos_de_base_de_datos(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
-
         $rol = DB::table('roles')->where('nombre', 'estudiante')->first();
         $seccionId = DB::table('secciones')->insertGetId([
             'nombre' => 'Prueba Dashboard '.time(),
@@ -86,9 +92,7 @@ class DashboardEstudianteTest extends TestCase
 
     public function test_estudiante_puede_actualizar_perfil_sin_cambiar_contrasena(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
+        Storage::fake('public');
 
         $rol = DB::table('roles')->where('nombre', 'estudiante')->first();
         $seccionId = DB::table('secciones')->insertGetId([
@@ -135,7 +139,36 @@ class DashboardEstudianteTest extends TestCase
         $this->assertSame('Quispe', $usuario->apellido_paterno);
         $this->assertSame('Choque', $usuario->apellido_materno);
         $this->assertSame('1234567', $usuario->ci);
-        $this->assertSame('data:image/jpeg;base64,'.base64_encode('foto'), $usuario->foto);
+        $this->assertStringStartsWith('avatars/', $usuario->foto);
+        Storage::disk('public')->assertExists($usuario->foto);
         $this->assertSame($password, $usuario->contrasena);
+    }
+
+    public function test_foto_base64_antigua_sigue_renderizando_en_dashboard(): void
+    {
+        $rol = DB::table('roles')->where('nombre', 'estudiante')->first();
+        $fotoBase64 = 'data:image/jpeg;base64,'.base64_encode('foto-antigua');
+
+        $idUsuario = DB::table('usuarios')->insertGetId([
+            'correo' => 'foto.antigua.'.time().'@msea.test',
+            'contrasena' => Hash::make('secret123'),
+            'nombres' => 'Foto',
+            'apellido_paterno' => 'Antigua',
+            'foto' => $fotoBase64,
+            'id_rol' => $rol->id_rol,
+        ], 'id_usuario');
+
+        DB::table('estudiantes')->insert([
+            'id_usuario' => $idUsuario,
+            'id_seccion' => DB::table('secciones')->where('nombre', 'General')->value('id_seccion'),
+            'fecha_ingreso' => now()->toDateString(),
+        ]);
+
+        $this->withSession([
+            'usuario_id' => $idUsuario,
+            'rol' => 'estudiante',
+        ])->get('/dashboard-estudiante')
+            ->assertOk()
+            ->assertSee(str_replace('/', '\\/', $fotoBase64), false);
     }
 }

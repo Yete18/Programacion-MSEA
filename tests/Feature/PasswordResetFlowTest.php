@@ -2,21 +2,26 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeedsMseaCatalogs;
 use Tests\TestCase;
 
 class PasswordResetFlowTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
+    use SeedsMseaCatalogs;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seedMseaCatalogs();
+    }
 
     public function test_estudiante_puede_cambiar_contrasena_con_codigo_valido(): void
     {
-        if (config('database.default') !== 'pgsql') {
-            $this->markTestSkipped('Este flujo usa el esquema existente de PostgreSQL de MSEA.');
-        }
-
         $correo = 'reset.test.'.time().'@msea.test';
         $rol = DB::table('roles')->where('nombre', 'estudiante')->first();
         $seccion = DB::table('secciones')->where('nombre', 'General')->first();
