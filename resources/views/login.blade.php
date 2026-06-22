@@ -86,6 +86,10 @@
                 <span class="role-icon">🏫</span>
                 <span class="role-name">Director</span>
               </button>
+              <button type="button" class="role-btn" data-role="padre">
+                <span class="role-icon">👨‍👩‍👧</span>
+                <span class="role-name">Padre</span>
+              </button>
             </div>
             <!-- Input oculto que guarda el rol seleccionado -->
             <input type="hidden" id="rol" name="rol" value="estudiante" />

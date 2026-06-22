@@ -857,3 +857,115 @@ body {
   .logros-stats-row { grid-template-columns: 1fr; }
   .perfil-badges-row { flex-wrap: wrap; }
 }
+
+.msea-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.msea-tool-card {
+  min-height: 220px;
+}
+
+.tuner-display,
+.metronome-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  text-align: center;
+}
+
+.tuner-display strong {
+  font-family: 'Baloo 2', cursive;
+  font-size: 3rem;
+  color: var(--verde-oscuro);
+}
+
+.tuner-meter {
+  width: 160px;
+  height: 10px;
+  border-radius: 50px;
+  background: linear-gradient(90deg, var(--rojo), var(--amarillo), var(--verde-principal), var(--amarillo), var(--rojo));
+  position: relative;
+}
+
+#tuner-needle {
+  width: 4px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--gris-texto);
+  position: absolute;
+  left: 78px;
+  top: -9px;
+  transition: transform .12s ease;
+}
+
+.metronome-box input {
+  width: 100%;
+}
+
+.beat-dots {
+  display: flex;
+  gap: 10px;
+}
+
+.beat-dots span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gris-borde);
+}
+
+.beat-dots span.active {
+  background: var(--verde-principal);
+  box-shadow: 0 0 0 6px var(--verde-suave);
+}
+
+.theory-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.theory-options button {
+  border: 2px solid var(--gris-borde);
+  background: var(--gris-fondo);
+  border-radius: 14px;
+  padding: 10px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.theory-options button.ok {
+  border-color: var(--verde-principal);
+  background: var(--verde-suave);
+}
+
+.theory-options button.bad {
+  border-color: var(--rojo);
+  color: var(--rojo);
+}
+
+.course-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gris-borde);
+}
+
+.course-mini:last-child {
+  border-bottom: 0;
+}
+
+.course-mini span,
+.tool-muted,
+.tool-question {
+  color: var(--gris-suave);
+  font-weight: 700;
+  font-size: .88rem;
+}

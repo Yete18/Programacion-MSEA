@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initRanking();
   initLogros();
   initEjercicios();
+  initInteractiveModules();
   initProgreso();
   initRankingFull();
   initLogrosFull();
@@ -64,6 +65,10 @@ const RANKING = [
   { nombre: 'Valeria Ticona',puntos:  870, avatar: '👧', instrumento: '🎻 Chelo',    esYo: false },
 ];
 
+if (Array.isArray(window.MSEA_TAREAS) && window.MSEA_TAREAS.length) {
+  TAREAS.splice(0, TAREAS.length, ...window.MSEA_TAREAS);
+}
+
 if (Array.isArray(window.MSEA_RANKING) && window.MSEA_RANKING.length) {
   RANKING.splice(0, RANKING.length, ...window.MSEA_RANKING);
 }
@@ -79,6 +84,10 @@ const LOGROS = [
   { emoji: '🚀', nombre: 'Cohete musical',   desc: '500 puntos',       bloqueado: true  },
 ];
 
+if (Array.isArray(window.MSEA_LOGROS) && window.MSEA_LOGROS.length) {
+  LOGROS.splice(0, LOGROS.length, ...window.MSEA_LOGROS);
+}
+
 const EJERCICIOS = [
   { emoji: '🎵', nombre: 'Escala de Do Mayor',    desc: 'Primera posición, tempo ♩=60', chips: ['🎻 Violín','⏱️ 5min','🌱 Básico'],  xp: 30, tipo: 'escala' },
   { emoji: '🥁', nombre: 'Ritmo básico 4/4',      desc: 'Golpea con precisión al metrónomo',  chips: ['🥁 Todos','⏱️ 3min','🌱 Básico'],  xp: 20, tipo: 'ritmo' },
@@ -88,6 +97,10 @@ const EJERCICIOS = [
   { emoji: '📖', nombre: 'Intervalos musicales',  desc: 'Reconoce y canta intervalos',        chips: ['🎵 Teoría','⏱️ 10min','⚡ Medio'],  xp: 40, tipo: 'teoria' },
 ];
 
+if (Array.isArray(window.MSEA_EJERCICIOS) && window.MSEA_EJERCICIOS.length) {
+  EJERCICIOS.splice(0, EJERCICIOS.length, ...window.MSEA_EJERCICIOS);
+}
+
 const NOTIFICACIONES = [
   { icono: '📋', texto: 'Nueva tarea asignada: Escala de Re Mayor', tiempo: 'Hace 10 min', leida: false },
   { icono: '🏆', texto: '¡Subiste al puesto #4 en el ranking!',    tiempo: 'Hace 1 hora',  leida: false },
@@ -96,6 +109,10 @@ const NOTIFICACIONES = [
   { icono: '💬', texto: 'Prof. Ana dejó un comentario en tu tarea', tiempo: 'Hace 2 días',  leida: true  },
 ];
 
+if (Array.isArray(window.MSEA_NOTIFICACIONES) && window.MSEA_NOTIFICACIONES.length) {
+  NOTIFICACIONES.splice(0, NOTIFICACIONES.length, ...window.MSEA_NOTIFICACIONES);
+}
+
 const ACTIVIDAD = [
   { icono: '🎯', texto: 'Completaste: Escala de Do Mayor',   tiempo: 'Hoy, 09:15',       xp: '+30 XP' },
   { icono: '📋', texto: 'Entregaste: Ejercicio de arco',     tiempo: 'Ayer, 16:40',       xp: '+20 XP' },
@@ -103,6 +120,13 @@ const ACTIVIDAD = [
   { icono: '🎯', texto: 'Completaste: Ritmo básico 4/4',     tiempo: 'Hace 2 días',       xp: '+20 XP' },
   { icono: '🔥', texto: 'Racha de 4 días alcanzada',         tiempo: 'Hace 3 días',       xp: '+10 XP' },
 ];
+
+if (Array.isArray(window.MSEA_ACTIVIDAD) && window.MSEA_ACTIVIDAD.length) {
+  ACTIVIDAD.splice(0, ACTIVIDAD.length, ...window.MSEA_ACTIVIDAD);
+}
+
+const TEORIA = Array.isArray(window.MSEA_TEORIA) ? window.MSEA_TEORIA : [];
+const CURSOS = Array.isArray(window.MSEA_CURSOS) ? window.MSEA_CURSOS : [];
 
 /* ============================================================
    CLAVE DE AVATAR EN localStorage
@@ -494,7 +518,6 @@ function initTareas() {
       </div>
       <span class="tarea-badge ${badgeClass}">${badgeTexto}</span>
     `;
-
     li.addEventListener('click', () => { showToast(`📋 Abriendo: ${tarea.nombre}`); navigateTo('tareas'); });
     lista.appendChild(li);
   });
@@ -506,6 +529,7 @@ function initTareas() {
 function renderTareasCompletas() {
   const grid = document.getElementById('tareas-full-grid');
   if (!grid) return;
+  grid.innerHTML = '';
 
   TAREAS.forEach((tarea, i) => {
     const div = document.createElement('div');
@@ -514,6 +538,16 @@ function renderTareasCompletas() {
 
     const badgeClass = { urgente: 'badge-urgente', normal: 'badge-normal', proxima: 'badge-proxima' }[tarea.urgencia] || 'badge-normal';
     const badgeTexto = { urgente: '🔴 Urgente', normal: '🟢 Normal', proxima: '🟡 Próxima' }[tarea.urgencia] || '';
+
+    let btnText = 'Entregar tarea 🚀';
+    let btnClass = 'tcf-btn';
+    if (tarea.tipo === 'entregada') {
+      btnText = 'Entregada (En revisión) ⏳';
+      btnClass = 'tcf-btn disabled-btn';
+    } else if (tarea.tipo === 'calificada') {
+      btnText = 'Calificada ✅';
+      btnClass = 'tcf-btn calificada-btn';
+    }
 
     div.innerHTML = `
       <div class="tcf-top">
@@ -530,17 +564,80 @@ function renderTareasCompletas() {
         <span class="tcf-chip">+${tarea.xp} XP</span>
         <span class="tcf-chip">📂 ${tarea.tipo}</span>
       </div>
-      <button class="tcf-btn">Ver tarea 🎯</button>
+      <button class="${btnClass}">${btnText}</button>
     `;
 
-    div.querySelector('.tcf-btn').addEventListener('click', () => showToast(`📋 Abriendo: ${tarea.nombre}`));
+    const btn = div.querySelector('button');
+    btn.addEventListener('click', () => {
+      if (tarea.tipo === 'pendiente') {
+        openEntregaModal(tarea);
+      } else if (tarea.tipo === 'entregada') {
+        showToast('⏳ Esta tarea ya fue entregada y está en revisión.');
+      } else if (tarea.tipo === 'calificada') {
+        showToast('✅ Esta tarea ya fue calificada por tu profesor.');
+      }
+    });
+
     grid.appendChild(div);
   });
 }
 
-/* ============================================================
-   7. RANKING — Mini inicio
-   ============================================================ */
+function openEntregaModal(tarea) {
+  const modal = document.getElementById('modal-entrega');
+  const titulo = document.getElementById('entrega-tarea-titulo');
+  const comentario = document.getElementById('entrega-comentario');
+  const archivo = document.getElementById('entrega-archivo');
+  const submitBtn = document.getElementById('btn-entrega-submit');
+  const cancelBtn = document.getElementById('btn-entrega-cancel');
+
+  if (!modal) return;
+
+  if (titulo) titulo.textContent = tarea.nombre;
+  if (comentario) comentario.value = '';
+  if (archivo) archivo.value = `grabacion_${tarea.nombre.toLowerCase().replace(/[^a-z0-9]/g, '_')}.mp3`;
+
+  modal.classList.remove('hidden');
+
+  const close = () => {
+    modal.classList.add('hidden');
+    const newSubmitBtn = submitBtn.cloneNode(true);
+    submitBtn.replaceWith(newSubmitBtn);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.replaceWith(newCancelBtn);
+  };
+
+  document.getElementById('btn-entrega-cancel').addEventListener('click', close);
+
+  document.getElementById('btn-entrega-submit').addEventListener('click', async () => {
+    const payload = {
+      comentario_estudiante: document.getElementById('entrega-comentario').value.trim(),
+      archivo: document.getElementById('entrega-archivo').value.trim(),
+    };
+
+    try {
+      const response = await fetch(`/dashboard-estudiante/tareas/${tarea.id}/entregar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': csrfToken(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Error al entregar tarea.');
+
+      showToast('🚀 ¡Tarea entregada correctamente!');
+      tarea.tipo = 'entregada';
+      close();
+      renderTareasCompletas();
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
+}
+
 function initRanking() {
   const lista = document.getElementById('ranking-list');
   if (!lista) return;
@@ -613,9 +710,13 @@ function renderEjerciciosFiltrados(filtro) {
       <p class="ecf-desc">${ej.desc}</p>
       <div class="ecf-chips">${ej.chips.map(c => `<span class="ecf-chip">${c}</span>`).join('')}</div>
       <span class="ecf-xp">+${ej.xp} XP</span>
-      <button class="ecf-btn">¡Empezar! 🚀</button>
+      <button class="ecf-btn">Empezar</button>
     `;
-    div.querySelector('.ecf-btn').addEventListener('click', () => showToast(`🎯 Iniciando: ${ej.nombre}`));
+    div.querySelector('.ecf-btn').addEventListener('click', () => {
+      recordPractice({ tipo: ej.tipo || 'libre', id_ejercicio: ej.id, duracion_segundos: 180, precision: 85 })
+        .then((data) => showToast(`Practica registrada: +${data.xp || ej.xp || 0} XP`))
+        .catch((error) => showToast(error.message));
+    });
     grid.appendChild(div);
   });
 
@@ -739,6 +840,234 @@ function initLogrosFull() {
     if (!logro.bloqueado) div.addEventListener('click', () => showToast(`${logro.emoji} ¡${logro.nombre}!`));
     grid.appendChild(div);
   });
+}
+
+function initInteractiveModules() {
+  const view = document.getElementById('view-ejercicios');
+  if (!view || document.getElementById('msea-interactive-tools')) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'msea-interactive-tools';
+  wrap.className = 'msea-tools-grid';
+  wrap.innerHTML = `
+    <section class="card msea-tool-card">
+      <div class="card-header"><h3 class="card-title">Afinador</h3><span class="ecf-chip">Microfono</span></div>
+      <div class="tuner-display">
+        <strong id="tuner-note">--</strong>
+        <span id="tuner-frequency">Permite el microfono para detectar la nota.</span>
+        <div class="tuner-meter"><div id="tuner-needle"></div></div>
+      </div>
+      <button class="btn-ejercicio" id="btn-tuner">Iniciar afinador</button>
+    </section>
+    <section class="card msea-tool-card">
+      <div class="card-header"><h3 class="card-title">Metronomo y ritmo</h3><span class="ecf-chip">4/4</span></div>
+      <div class="metronome-box">
+        <input type="range" min="40" max="180" value="80" id="metro-bpm" />
+        <strong><span id="metro-bpm-text">80</span> BPM</strong>
+        <div class="beat-dots" id="beat-dots"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <button class="btn-ejercicio" id="btn-metro">Iniciar metronomo</button>
+    </section>
+    <section class="card msea-tool-card">
+      <div class="card-header"><h3 class="card-title">Teoria interactiva</h3><span class="ecf-chip">Quiz</span></div>
+      <div id="theory-box"></div>
+    </section>
+    <section class="card msea-tool-card">
+      <div class="card-header"><h3 class="card-title">Mis cursos</h3><span class="ecf-chip">MSEA</span></div>
+      <div id="courses-box"></div>
+    </section>
+  `;
+
+  view.querySelector('.ejercicios-filtros')?.after(wrap);
+  initTunerTool();
+  initMetronomeTool();
+  renderTheoryTool();
+  renderCoursesTool();
+}
+
+async function recordPractice(payload) {
+  const response = await fetch('/dashboard-estudiante/practica', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-CSRF-TOKEN': csrfToken(),
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || 'No se pudo registrar la practica.');
+  ESTUDIANTE.puntos = Number(ESTUDIANTE.puntos || 0) + Number(data.xp || 0);
+  ESTUDIANTE.xp = ESTUDIANTE.puntos % (ESTUDIANTE.xpMax || 500);
+  ESTUDIANTE.nivel = Math.max(1, Math.floor(ESTUDIANTE.puntos / 500) + 1);
+  applyStudentData();
+  initGreeting();
+  return data;
+}
+
+function initTunerTool() {
+  const btn = document.getElementById('btn-tuner');
+  const noteEl = document.getElementById('tuner-note');
+  const freqEl = document.getElementById('tuner-frequency');
+  const needle = document.getElementById('tuner-needle');
+  let audioCtx;
+  let analyser;
+  let stream;
+  let running = false;
+
+  btn?.addEventListener('click', async () => {
+    if (running) {
+      stream?.getTracks().forEach(track => track.stop());
+      running = false;
+      btn.textContent = 'Iniciar afinador';
+      recordPractice({ tipo: 'afinacion', duracion_segundos: 60, nota_detectada: noteEl?.textContent || null }).catch(() => {});
+      return;
+    }
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+      running = true;
+      btn.textContent = 'Detener afinador';
+      detectPitch();
+    } catch (error) {
+      showToast('No se pudo acceder al microfono.');
+    }
+  });
+
+  function detectPitch() {
+    if (!running || !analyser || !audioCtx) return;
+    const buffer = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buffer);
+    const frequency = autoCorrelate(buffer, audioCtx.sampleRate);
+    if (frequency > 0) {
+      const note = noteFromFrequency(frequency);
+      const cents = centsOffFromPitch(frequency, note.frequency);
+      if (noteEl) noteEl.textContent = note.name;
+      if (freqEl) freqEl.textContent = `${frequency.toFixed(1)} Hz - ${cents.toFixed(0)} cents`;
+      if (needle) needle.style.transform = `translateX(${Math.max(-48, Math.min(48, cents))}px)`;
+    }
+    requestAnimationFrame(detectPitch);
+  }
+}
+
+function autoCorrelate(buffer, sampleRate) {
+  let rms = 0;
+  for (const value of buffer) rms += value * value;
+  rms = Math.sqrt(rms / buffer.length);
+  if (rms < 0.01) return -1;
+
+  let bestOffset = -1;
+  let bestCorrelation = 0;
+  const maxOffset = Math.floor(sampleRate / 70);
+  const minOffset = Math.floor(sampleRate / 1000);
+
+  for (let offset = minOffset; offset <= maxOffset; offset++) {
+    let correlation = 0;
+    for (let i = 0; i < buffer.length - offset; i++) {
+      correlation += 1 - Math.abs(buffer[i] - buffer[i + offset]);
+    }
+    correlation /= buffer.length - offset;
+    if (correlation > bestCorrelation) {
+      bestCorrelation = correlation;
+      bestOffset = offset;
+    }
+  }
+
+  return bestCorrelation > 0.9 ? sampleRate / bestOffset : -1;
+}
+
+function noteFromFrequency(frequency) {
+  const noteNumber = Math.round(12 * (Math.log(frequency / 440) / Math.log(2))) + 69;
+  const names = ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si'];
+  return {
+    name: names[((noteNumber % 12) + 12) % 12],
+    frequency: 440 * Math.pow(2, (noteNumber - 69) / 12),
+  };
+}
+
+function centsOffFromPitch(frequency, reference) {
+  return 1200 * Math.log2(frequency / reference);
+}
+
+function initMetronomeTool() {
+  const btn = document.getElementById('btn-metro');
+  const input = document.getElementById('metro-bpm');
+  const text = document.getElementById('metro-bpm-text');
+  const dots = [...document.querySelectorAll('#beat-dots span')];
+  let timer;
+  let beat = 0;
+  let ctx;
+
+  input?.addEventListener('input', () => {
+    if (text) text.textContent = input.value;
+    if (timer) restart();
+  });
+
+  btn?.addEventListener('click', () => {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+      btn.textContent = 'Iniciar metronomo';
+      dots.forEach(dot => dot.classList.remove('active'));
+      recordPractice({ tipo: 'ritmo', duracion_segundos: 120, bpm: Number(input?.value || 80), patron: '4/4', precision: 80 }).catch(() => {});
+      return;
+    }
+    restart();
+    btn.textContent = 'Detener metronomo';
+  });
+
+  function restart() {
+    if (timer) clearInterval(timer);
+    beat = 0;
+    tick();
+    timer = setInterval(tick, 60000 / Number(input?.value || 80));
+  }
+
+  function tick() {
+    ctx ||= new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = beat % 4 === 0 ? 1100 : 760;
+    gain.gain.value = 0.08;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.04);
+    dots.forEach((dot, i) => dot.classList.toggle('active', i === beat % 4));
+    beat += 1;
+  }
+}
+
+function renderTheoryTool() {
+  const box = document.getElementById('theory-box');
+  if (!box) return;
+  const item = TEORIA[0];
+  if (!item) {
+    box.innerHTML = '<p class="tool-muted">Aun no hay preguntas de teoria cargadas.</p>';
+    return;
+  }
+  box.innerHTML = `<p class="tool-question">${item.pregunta}</p><div class="theory-options">${(item.opciones || []).map(o => `<button>${o}</button>`).join('')}</div>`;
+  box.querySelectorAll('button').forEach(button => {
+    button.addEventListener('click', () => {
+      const ok = button.textContent === item.respuesta;
+      button.classList.add(ok ? 'ok' : 'bad');
+      if (ok) recordPractice({ tipo: 'teoria', duracion_segundos: 60, precision: 100 }).then(data => showToast(`Respuesta correcta: +${data.xp} XP`));
+      else showToast('Intenta otra vez.');
+    });
+  });
+}
+
+function renderCoursesTool() {
+  const box = document.getElementById('courses-box');
+  if (!box) return;
+  if (!CURSOS.length) {
+    box.innerHTML = '<p class="tool-muted">Todavia no estas inscrito en cursos.</p>';
+    return;
+  }
+  box.innerHTML = CURSOS.map(c => `<div class="course-mini"><strong>${c.titulo}</strong><span>${c.instrumento || 'Instrumento'} - ${c.nivel} - ${c.lecciones} lecciones</span></div>`).join('');
 }
 
 /* ============================================================

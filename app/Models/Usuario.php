@@ -60,9 +60,19 @@ class Usuario extends Authenticatable
         return $this->hasOne(Profesor::class, 'id_usuario', 'id_usuario');
     }
 
+    public function padre()
+    {
+        return $this->hasOne(Padre::class, 'id_usuario', 'id_usuario');
+    }
+
     public function instrumentos()
     {
         return $this->belongsToMany(Instrumento::class, 'usuario_instrumento', 'id_usuario', 'id_instrumento')
             ->withPivot('id');
+    }
+
+    public function notificaciones()
+    {
+        return $this->hasMany(Notificacion::class, 'id_usuario', 'id_usuario');
     }
 }

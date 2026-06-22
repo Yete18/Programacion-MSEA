@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Models\Usuario;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
@@ -44,10 +46,17 @@ class AuthController extends Controller
             'rol' => $usuario->rol_nombre,
         ]);
 
+        if (Schema::hasColumn('usuarios', 'ultimo_ingreso_at')) {
+            Usuario::query()
+                ->whereKey($usuario->id_usuario)
+                ->update(['ultimo_ingreso_at' => now()]);
+        }
+
         return match ($usuario->rol_nombre) {
             'estudiante' => redirect('/dashboard-estudiante'),
             'profesor' => redirect('/dashboard-profesor'),
             'director' => redirect('/dashboard-admin'),
+            'padre' => redirect('/dashboard-padre'),
             default => redirect('/'),
         };
     }

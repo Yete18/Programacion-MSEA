@@ -74,4 +74,27 @@ class Estudiante extends Model
         return $this->belongsToMany(Recompensa::class, 'estudiante_recompensa', 'id_estudiante', 'id_recompensa')
             ->withPivot(['id', 'fecha']);
     }
+
+    public function cursos()
+    {
+        return $this->belongsToMany(Curso::class, 'curso_estudiante', 'id_estudiante', 'id_curso')
+            ->withPivot(['id', 'inscrito_at']);
+    }
+
+    public function gamificacion()
+    {
+        return $this->hasOne(GamificacionPerfil::class, 'id_estudiante', 'id_estudiante');
+    }
+
+    public function logros()
+    {
+        return $this->belongsToMany(Logro::class, 'estudiante_logro', 'id_estudiante', 'id_logro')
+            ->withPivot(['id', 'desbloqueado_at']);
+    }
+
+    public function padres()
+    {
+        return $this->belongsToMany(Padre::class, 'estudiante_padre', 'id_estudiante', 'id_padre')
+            ->withPivot('id');
+    }
 }

@@ -624,9 +624,36 @@
   </div>
 </div>
 
+<!-- Modal de entrega de tarea -->
+<div class="modal-overlay hidden" id="modal-entrega">
+  <div class="modal-box" style="max-width:500px">
+    <p class="modal-title">📋 Entregar Tarea</p>
+    <h3 id="entrega-tarea-titulo" style="margin-bottom:15px;color:#2c3e50">Practicar escala de Re Mayor</h3>
+    <div style="text-align:left;margin-bottom:15px;">
+      <label style="font-weight:700;display:block;margin-bottom:5px;color:#2c3e50">Mensaje para tu profesor:</label>
+      <textarea id="entrega-comentario" placeholder="Escribe aquí un mensaje contándole cómo te fue practicando..." style="width:100%;height:100px;border-radius:10px;border:2px solid #e2e8f0;padding:10px;font-family:inherit;font-size:0.95rem;resize:vertical;"></textarea>
+    </div>
+    <div style="text-align:left;margin-bottom:20px;">
+      <label style="font-weight:700;display:block;margin-bottom:5px;color:#2c3e50">Nombre de tu archivo / audio:</label>
+      <input type="text" id="entrega-archivo" placeholder="grabacion_violin.mp3" style="width:100%;border-radius:10px;border:2px solid #e2e8f0;padding:10px;font-family:inherit;font-size:0.95rem;" value="grabacion_violin_msea.mp3" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-confirm" id="btn-entrega-submit">🚀 Enviar entrega</button>
+      <button class="btn-modal-cancel" id="btn-entrega-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script>
   window.MSEA_ESTUDIANTE = @json($dashboardData ?? []);
   window.MSEA_RANKING = @json($rankingData ?? []);
+  window.MSEA_TAREAS = @json($tareasData ?? []);
+  window.MSEA_EJERCICIOS = @json($ejerciciosData ?? []);
+  window.MSEA_LOGROS = @json($logrosData ?? []);
+  window.MSEA_ACTIVIDAD = @json($actividadData ?? []);
+  window.MSEA_NOTIFICACIONES = @json($notificacionesData ?? []);
+  window.MSEA_CURSOS = @json($cursosData ?? []);
+  window.MSEA_TEORIA = @json($teoriaData ?? []);
 </script>
 <script src="{{ asset('js/dashboard-estudiante.js') }}"></script>
 </body>

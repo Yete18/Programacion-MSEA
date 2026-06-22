@@ -14,9 +14,12 @@ class Ejercicio extends Model
 
     protected $fillable = [
         'id_tipo',
+        'titulo',
         'descripcion',
         'archivo',
         'creado_por',
+        'dificultad',
+        'xp',
     ];
 
     public function tipo()

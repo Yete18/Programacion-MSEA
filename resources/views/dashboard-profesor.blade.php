@@ -178,6 +178,71 @@
   <div class="modal-footer"><button class="btn-modal-cancel" id="btn-modal-cancel">Cancelar</button><button class="btn-modal-submit" id="btn-modal-submit"><span class="btn-text">Asignar tarea</span><span class="btn-loader" id="modal-loader" style="display:none">Guardando...</span></button></div>
 </div>
 
+<!-- Modal para revisar y calificar tarea -->
+<div class="modal" id="modal-revisar-tarea" style="display:none">
+  <div class="modal-header"><h3 class="modal-title">📬 Revisar y Calificar Tarea</h3><button class="modal-close" id="modal-revisar-close">✕</button></div>
+  <div class="modal-body">
+    <div class="field-group">
+      <label class="field-label">📝 Tarea:</label>
+      <p id="revisar-tarea-titulo" style="font-weight:bold;font-size:1.1rem;color:#1e3a8a;margin:5px 0;"></p>
+    </div>
+    <div class="field-group">
+      <label class="field-label">🎓 Alumno:</label>
+      <p id="revisar-tarea-alumno" style="font-weight:bold;margin:5px 0;"></p>
+    </div>
+    <div class="field-group">
+      <label class="field-label">💬 Comentario del Estudiante:</label>
+      <blockquote id="revisar-tarea-comentario-estudiante" style="background:#f8fafc;padding:12px;border-left:4px solid #3b82f6;margin:5px 0;font-style:italic;border-radius:0 8px 8px 0;"></blockquote>
+    </div>
+    <div class="field-group">
+      <label class="field-label">🎼 Archivo entregado:</label>
+      <p style="margin:5px 0;"><span id="revisar-tarea-archivo-name" style="font-weight:bold;color:#2563eb;"></span></p>
+    </div>
+    <hr style="border:0;border-top:1px solid #e2e8f0;margin:15px 0;" />
+    <div class="field-group">
+      <label class="field-label" for="revisar-calificacion">⭐ Calificación (0 - 100):</label>
+      <input type="number" id="revisar-calificacion" class="field-input" min="0" max="100" value="100" />
+      <p class="field-error" id="err-revisar-calificacion"></p>
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="revisar-comentario-profesor">✍️ Comentario de Retroalimentación:</label>
+      <textarea id="revisar-comentario-profesor" class="field-input field-textarea" placeholder="Escribe aquí tus observaciones y consejos para el estudiante..."></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-modal-cancel" id="btn-revisar-cancel">Cancelar</button>
+    <button class="btn-modal-submit" id="btn-revisar-submit"><span class="btn-text">Guardar Calificación ✓</span></button>
+  </div>
+</div>
+
+<!-- Modal para ver el progreso detallado de un alumno -->
+<div class="modal" id="modal-progreso-alumno" style="display:none">
+  <div class="modal-header"><h3 class="modal-title">📈 Reporte de Progreso y Prácticas</h3><button class="modal-close" id="modal-progreso-close">✕</button></div>
+  <div class="modal-body" style="max-height: 60vh; overflow-y: auto; padding: 15px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <h2 id="progreso-alumno-nombre" style="margin-bottom:5px;color:#1e3a8a">Cargando...</h2>
+      <p style="font-weight:bold;color:#64748b;margin:0;">Seguimiento de Práctica en Casa</p>
+    </div>
+    
+    <div style="display:grid;grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+      <div class="card stat-card" style="padding: 15px;margin:0;display:flex;flex-direction:column;justify-content:center;align-items:center;"><p class="stat-value" id="progreso-total-minutos" style="font-size:1.8rem;margin:0;color:#10b981">0</p><p class="stat-label" style="margin:5px 0 0 0;font-size:0.8rem">Minutos Practicados</p></div>
+      <div class="card stat-card" style="padding: 15px;margin:0;display:flex;flex-direction:column;justify-content:center;align-items:center;"><p class="stat-value" id="progreso-ejercicios-completados" style="font-size:1.8rem;margin:0;color:#3b82f6">0</p><p class="stat-label" style="margin:5px 0 0 0;font-size:0.8rem">Ejercicios Completados</p></div>
+      <div class="card stat-card" style="padding: 15px;margin:0;display:flex;flex-direction:column;justify-content:center;align-items:center;"><p class="stat-value" id="progreso-afinaciones-hechas" style="font-size:1.8rem;margin:0;color:#f59e0b">0</p><p class="stat-label" style="margin:5px 0 0 0;font-size:0.8rem">Sesiones Afinación</p></div>
+      <div class="card stat-card" style="padding: 15px;margin:0;display:flex;flex-direction:column;justify-content:center;align-items:center;"><p class="stat-value" id="progreso-precision-ritmo" style="font-size:1.8rem;margin:0;color:#8b5cf6">0%</p><p class="stat-label" style="margin:5px 0 0 0;font-size:0.8rem">Precisión Rítmica</p></div>
+    </div>
+
+    <div class="card" style="margin-bottom: 15px; padding: 15px; border: 1px solid #e2e8f0;border-radius:12px;">
+      <h3 class="card-title" style="margin:0 0 10px 0;font-size:1rem;color:#1e293b">🕐 Historial Reciente de Práctica</h3>
+      <ul class="notif-list" id="progreso-historial-lista" style="max-height: 200px; overflow-y: auto; padding: 0;list-style:none;margin:0;">
+        <!-- Se rellena con JS -->
+      </ul>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-modal-cancel" id="btn-progreso-cerrar" style="width:100%;margin:0">Cerrar Reporte</button>
+  </div>
+</div>
+
 <div class="perfil-overlay" id="perfil-overlay"></div>
 <aside class="perfil-drawer" id="perfil-drawer">
   <div class="perfil-drawer-header"><h2 class="perfil-drawer-title">👤 Mi Perfil</h2><button class="perfil-close" id="perfil-close">✕</button></div>

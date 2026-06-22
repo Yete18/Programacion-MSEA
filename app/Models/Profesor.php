@@ -40,4 +40,9 @@ class Profesor extends Model
     {
         return $this->hasMany(Feedback::class, 'id_profesor', 'id_profesor');
     }
+
+    public function cursos()
+    {
+        return $this->hasMany(Curso::class, 'id_profesor', 'id_profesor');
+    }
 }

@@ -19,12 +19,16 @@ class Tarea extends Model
         'id_profesor',
         'id_elenco',
         'id_estudiante',
+        'fecha_limite',
+        'xp_recompensa',
+        'estado',
     ];
 
     protected function casts(): array
     {
         return [
             'fecha_creacion' => 'datetime',
+            'fecha_limite' => 'date',
         ];
     }
 
@@ -47,5 +51,10 @@ class Tarea extends Model
     {
         return $this->belongsToMany(Ejercicio::class, 'tarea_ejercicio', 'id_tarea', 'id_ejercicio')
             ->withPivot('id');
+    }
+
+    public function entregas()
+    {
+        return $this->hasMany(EntregaTarea::class, 'id_tarea', 'id_tarea');
     }
 }

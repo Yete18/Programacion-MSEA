@@ -17,7 +17,7 @@ class LoginRequest extends FormRequest
         return [
             'correo' => 'required|email',
             'contrasena' => 'required',
-            'rol' => ['required', Rule::in(['estudiante', 'profesor', 'director', 'admin'])],
+            'rol' => ['required', Rule::in(['estudiante', 'profesor', 'director', 'admin', 'padre'])],
         ];
     }
 }

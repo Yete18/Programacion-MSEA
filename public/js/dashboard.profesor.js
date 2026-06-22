@@ -231,12 +231,43 @@ function initModalTarea() {
     const alumno = document.getElementById('tarea-alumno');
     const alumnoNombre = alumno?.options[alumno.selectedIndex]?.textContent || '';
     btnSubmit.disabled = true;
-    await wait(500);
-    btnSubmit.disabled = false;
-    closeModal();
-    const archivo = document.getElementById('tarea-archivo')?.files?.[0];
-    const extra = archivo ? ` con material "${archivo.name}"` : '';
-    showToast(`Tarea "${titulo}" preparada${extra} para ${alumnoNombre.split('·')[0].trim()}. Falta guardar en BD.`);
+    try {
+      const archivo = document.getElementById('tarea-archivo')?.files?.[0];
+      const response = await fetch('/dashboard-profesor/tareas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+        },
+        body: JSON.stringify({
+          titulo,
+          id_estudiante: alumno?.value,
+          descripcion: document.getElementById('tarea-desc')?.value.trim() || '',
+          fecha_limite: document.getElementById('tarea-fecha')?.value || null,
+          xp_recompensa: Number(document.getElementById('tarea-xp')?.value || 30),
+          tipo: 'Repertorio',
+          archivo: archivo?.name || null,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'No se pudo guardar la tarea.');
+      TAREAS_DATA.unshift({
+        id: data.tarea?.id_tarea,
+        titulo,
+        alumno: alumnoNombre.split('·')[0].trim(),
+        instrumento: document.getElementById('tarea-instrumento')?.value || 'Sin instrumento',
+        limite: document.getElementById('tarea-fecha')?.value || null,
+        estado: 'pendiente',
+      });
+      renderTareas();
+      closeModal();
+      showToast(`Tarea "${titulo}" guardada para ${alumnoNombre.split('·')[0].trim()}.`);
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      btnSubmit.disabled = false;
+    }
   });
 }
 
@@ -287,7 +318,7 @@ function renderEntregas() {
   lista.innerHTML = '';
   const entregas = TAREAS_DATA.filter(t => t.estado === 'entregada');
   if (!entregas.length) {
-    lista.innerHTML = '<li class="entrega-item"><div class="entrega-info"><p class="entrega-alumno">Sin entregas pendientes</p><p class="entrega-tarea">Cuando conectemos entregas, aparecerán aquí.</p></div></li>';
+    lista.innerHTML = '<li class="entrega-item"><div class="entrega-info"><p class="entrega-alumno">Sin entregas pendientes</p><p class="entrega-tarea">Cuando los estudiantes entreguen tareas, aparecerán aquí.</p></div></li>';
     return;
   }
   entregas.slice(0, 4).forEach((e, i) => {
@@ -295,7 +326,7 @@ function renderEntregas() {
     li.className = 'entrega-item';
     li.style.animationDelay = `${i * 0.07}s`;
     li.innerHTML = `<span class="entrega-avatar">🎓</span><div class="entrega-info"><p class="entrega-alumno">${e.alumno}</p><p class="entrega-tarea">📋 ${e.titulo}</p></div><span class="entrega-tiempo">${formatFecha(e.limite)}</span><button class="btn-revisar">Revisar</button>`;
-    li.querySelector('.btn-revisar')?.addEventListener('click', ev => { ev.stopPropagation(); showToast(`Abriendo entrega de ${e.alumno}...`); });
+    li.querySelector('.btn-revisar')?.addEventListener('click', ev => { ev.stopPropagation(); openRevisarModal(e); });
     lista.appendChild(li);
   });
 }
@@ -372,7 +403,7 @@ function renderAlumnos(filtro = '') {
     card.style.animationDelay = `${i * 0.06}s`;
     const pct = Math.round((Number(a.xp || 0) / Math.max(Number(a.xpMax || 500), 1)) * 100);
     card.innerHTML = `<div class="ac-avatar">${a.avatar || '🎓'}</div><p class="ac-nombre">${a.nombre}</p><p class="ac-instrumento">🎻 ${a.instrumento || 'Sin instrumento'}</p><span class="ac-nivel">${a.nivel || 'Sin nivel'}</span><div class="ac-stats"><div class="ac-stat"><span class="ac-stat-val">⭐${Number(a.puntos || 0).toLocaleString('es')}</span><span class="ac-stat-lbl">Puntos</span></div><div class="ac-stat"><span class="ac-stat-val">🔥${a.racha || 0}</span><span class="ac-stat-lbl">Racha</span></div><div class="ac-stat"><span class="ac-stat-val">${pct}%</span><span class="ac-stat-lbl">XP Nivel</span></div></div><button class="btn-ver-alumno">Ver progreso</button>`;
-    card.querySelector('.btn-ver-alumno')?.addEventListener('click', () => showToast(`Abriendo progreso de ${a.nombre}...`));
+    card.querySelector('.btn-ver-alumno')?.addEventListener('click', () => openProgresoModal(a.id));
     grid.appendChild(card);
   });
 }
@@ -383,7 +414,7 @@ function renderTareas(filtro = 'todas') {
   tbody.innerHTML = '';
   const data = filtro === 'todas' ? TAREAS_DATA : TAREAS_DATA.filter(t => t.estado === filtro);
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="6">Todavía no hay tareas guardadas. El siguiente paso es crear la tabla de tareas y entregas.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6">Todavía no hay tareas guardadas.</td></tr>';
     return;
   }
   const estadoMap = {
@@ -395,7 +426,8 @@ function renderTareas(filtro = 'todas') {
     const tr = document.createElement('tr');
     tr.style.animationDelay = `${i * 0.05}s`;
     const est = estadoMap[t.estado] || estadoMap.pendiente;
-    tr.innerHTML = `<td><strong>${t.titulo}</strong></td><td>${t.alumno}</td><td>${t.instrumento || 'Sin instrumento'}</td><td>${formatFecha(t.limite)}</td><td><span class="estado-chip ${est.cls}">${est.txt}</span></td><td><button class="btn-accion revisar" onclick="showToast('Revisando tarea...')">Ver</button></td>`;
+    tr.innerHTML = `<td><strong>${t.titulo}</strong></td><td>${t.alumno}</td><td>${t.instrumento || 'Sin instrumento'}</td><td>${formatFecha(t.limite)}</td><td><span class="estado-chip ${est.cls}">${est.txt}</span></td><td><button class="btn-accion revisar">Ver</button></td>`;
+    tr.querySelector('.revisar').addEventListener('click', () => openRevisarModal(t));
     tbody.appendChild(tr);
   });
 }
@@ -493,6 +525,184 @@ function showToast(msg, dur = 2500) {
   t.classList.add('show');
   clearTimeout(t._t);
   t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+async function openProgresoModal(alumnoId) {
+  const modal = document.getElementById('modal-progreso-alumno');
+  const overlay = document.getElementById('modal-overlay');
+  const nombreEl = document.getElementById('progreso-alumno-nombre');
+  const minutosEl = document.getElementById('progreso-total-minutos');
+  const completadosEl = document.getElementById('progreso-ejercicios-completados');
+  const afinacionesEl = document.getElementById('progreso-afinaciones-hechas');
+  const precisionEl = document.getElementById('progreso-precision-ritmo');
+  const historialLista = document.getElementById('progreso-historial-lista');
+
+  if (!modal || !overlay) return;
+
+  if (nombreEl) nombreEl.textContent = 'Cargando...';
+  if (historialLista) historialLista.innerHTML = '<li class="notif-item">Cargando historial...</li>';
+
+  modal.style.display = 'block';
+  modal.classList.add('open');
+  overlay.classList.add('active');
+
+  const close = () => {
+    modal.style.display = 'none';
+    modal.classList.remove('open');
+    overlay.classList.remove('active');
+  };
+
+  document.getElementById('btn-progreso-cerrar').onclick = close;
+  document.getElementById('modal-progreso-close').onclick = close;
+
+  try {
+    const response = await fetch(`/dashboard-profesor/alumnos/${alumnoId}/progreso`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Error al obtener progreso.');
+
+    const est = data.estudiante;
+    if (nombreEl) nombreEl.textContent = est.nombre;
+    if (minutosEl) minutosEl.textContent = est.totalMinutos;
+    if (completadosEl) completadosEl.textContent = est.ejerciciosHechos;
+    if (afinacionesEl) afinacionesEl.textContent = est.afinacionesHechas;
+    if (precisionEl) precisionEl.textContent = est.precisionRitmo + '%';
+
+    if (historialLista) {
+      historialLista.innerHTML = '';
+      if (!data.historial || data.historial.length === 0) {
+        historialLista.innerHTML = '<li class="notif-item" style="padding: 10px 0;"><div class="notif-item-body"><p class="notif-item-texto" style="margin:0;font-size:0.9rem;color:#64748b;">Sin prácticas registradas aún.</p></div></li>';
+      } else {
+        data.historial.forEach(h => {
+          const li = document.createElement('li');
+          li.className = 'notif-item';
+          li.style.borderBottom = '1px solid #f1f5f9';
+          li.style.padding = '8px 0';
+          li.innerHTML = `
+            <div class="notif-item-body" style="margin-left: 10px;">
+              <p class="notif-item-texto" style="font-weight:700;margin:0;font-size:0.9rem;color:#1e293b;">${h.tipo}</p>
+              <p class="notif-item-texto" style="margin:2px 0 0 0;font-size:0.8rem;color:#475569;">${h.detalle}</p>
+              <p class="notif-item-tiempo" style="margin:2px 0 0 0;font-size:0.75rem;color:#94a3b8;">${h.fecha}</p>
+            </div>
+          `;
+          historialLista.appendChild(li);
+        });
+      }
+    }
+  } catch (error) {
+    showToast(error.message);
+    close();
+  }
+}
+
+function openRevisarModal(tarea) {
+  const modal = document.getElementById('modal-revisar-tarea');
+  const overlay = document.getElementById('modal-overlay');
+  
+  if (!modal || !overlay) return;
+
+  const tTitulo = document.getElementById('revisar-tarea-titulo');
+  const tAlumno = document.getElementById('revisar-tarea-alumno');
+  const tComentario = document.getElementById('revisar-tarea-comentario-estudiante');
+  const tArchivo = document.getElementById('revisar-tarea-archivo-name');
+  const btnSubmit = document.getElementById('btn-revisar-submit');
+  const btnCancel = document.getElementById('btn-revisar-cancel');
+  const btnClose = document.getElementById('modal-revisar-close');
+  
+  const califInput = document.getElementById('revisar-calificacion');
+  const feedbackText = document.getElementById('revisar-comentario-profesor');
+
+  if (tTitulo) tTitulo.textContent = tarea.titulo;
+  if (tAlumno) tAlumno.textContent = tarea.alumno;
+  
+  if (tarea.estado === 'pendiente') {
+    if (tComentario) tComentario.textContent = 'El estudiante aún no ha enviado comentarios.';
+    if (tArchivo) tArchivo.textContent = 'Sin archivo entregado.';
+    if (califInput) califInput.disabled = true;
+    if (feedbackText) feedbackText.disabled = true;
+    if (btnSubmit) btnSubmit.style.display = 'none';
+  } else {
+    if (tComentario) tComentario.textContent = tarea.comentario_estudiante || 'Sin comentarios del estudiante.';
+    if (tArchivo) tArchivo.textContent = tarea.archivo_entrega || 'Sin archivo adjunto.';
+    if (califInput) {
+      califInput.disabled = false;
+      califInput.value = 100;
+    }
+    if (feedbackText) {
+      feedbackText.disabled = false;
+      feedbackText.value = '';
+    }
+    if (btnSubmit) btnSubmit.style.display = 'inline-block';
+  }
+
+  modal.style.display = 'block';
+  modal.classList.add('open');
+  overlay.classList.add('active');
+
+  const close = () => {
+    modal.style.display = 'none';
+    modal.classList.remove('open');
+    overlay.classList.remove('active');
+    
+    // Clean event handlers
+    const newSubmitBtn = btnSubmit.cloneNode(true);
+    btnSubmit.replaceWith(newSubmitBtn);
+    const newCancelBtn = btnCancel.cloneNode(true);
+    btnCancel.replaceWith(newCancelBtn);
+    const newCloseBtn = btnClose.cloneNode(true);
+    btnClose.replaceWith(newCloseBtn);
+  };
+
+  document.getElementById('btn-revisar-cancel').onclick = close;
+  document.getElementById('modal-revisar-close').onclick = close;
+
+  if (tarea.estado !== 'pendiente' && btnSubmit) {
+    document.getElementById('btn-revisar-submit').onclick = async () => {
+      const calif = Number(document.getElementById('revisar-calificacion').value);
+      const comments = document.getElementById('revisar-comentario-profesor').value.trim();
+      const errEl = document.getElementById('err-revisar-calificacion');
+
+      if (isNaN(calif) || calif < 0 || calif > 100) {
+        if (errEl) errEl.textContent = 'Ingresa una calificación válida entre 0 y 100.';
+        return;
+      }
+
+      if (errEl) errEl.textContent = '';
+      
+      const submitBtnCurrent = document.getElementById('btn-revisar-submit');
+      if (submitBtnCurrent) submitBtnCurrent.disabled = true;
+
+      try {
+        const response = await fetch(`/dashboard-profesor/entregas/${tarea.id_entrega}/calificar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+          },
+          body: JSON.stringify({
+            calificacion: calif,
+            comentario_profesor: comments,
+          }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || 'Error al calificar tarea.');
+
+        showToast('✅ ¡Tarea calificada correctamente!');
+        tarea.estado = 'calificada';
+        close();
+        
+        // Refresh UI lists
+        renderEntregas();
+        renderTareas();
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        const submitBtnCurrent = document.getElementById('btn-revisar-submit');
+        if (submitBtnCurrent) submitBtnCurrent.disabled = false;
+      }
+    };
+  }
 }
 
 window.showToast = showToast;
