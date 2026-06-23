@@ -83,7 +83,7 @@ h2 { font-size: 1.45rem; }
 .stat, .panel {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 8px;
   box-shadow: 0 8px 26px rgba(0,0,0,.05);
 }
 .stat { padding: 18px; }
@@ -134,7 +134,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); backgrou
   gap: 14px;
   padding: 18px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   background: #fbfdf7;
 }
 
@@ -152,7 +152,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); backgrou
 .course-card,
 .teacher-card {
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   background: #fff;
   overflow: hidden;
 }
@@ -259,7 +259,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); backgrou
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: #fbfdf7;
 }
 
@@ -281,7 +281,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); backgrou
   gap: 14px;
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   background: #fff;
 }
 
@@ -366,7 +366,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); backgrou
 .empty-state {
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   background: #fbfdf7;
 }
 
@@ -382,12 +382,136 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); backgrou
   line-height: 1.45;
 }
 
+.report-summary,
+.action-grid,
+.alarm-grid,
+.help-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.report-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.action-grid,
+.alarm-grid,
+.help-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mini-stat,
+.action-card,
+.alarm-card,
+.help-card,
+.master-detail-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdf7;
+}
+
+.mini-stat {
+  padding: 15px;
+}
+
+.mini-stat span {
+  display: block;
+  color: var(--green-dark);
+  font-family: 'Baloo 2', cursive;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.mini-stat p,
+.action-card p,
+.alarm-card p,
+.help-card p,
+.master-detail-card p {
+  color: var(--muted);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+}
+
+.action-card h3,
+.alarm-card h3,
+.help-card h3,
+.master-detail-card h3 {
+  font-family: 'Baloo 2', cursive;
+  line-height: 1.05;
+}
+
+.security-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+}
+
+.master-detail-list {
+  display: grid;
+  gap: 12px;
+}
+
+.master-detail-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.master-detail-card summary::-webkit-details-marker { display: none; }
+
+.master-detail-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.master-detail-body h4 {
+  margin-top: 14px;
+}
+
+.alarm-card,
+.help-card {
+  padding: 16px;
+}
+
+.alarm-card span {
+  display: inline-flex;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: .76rem;
+  font-weight: 900;
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.alarm-card.alta span { background: #fff0f0; color: var(--danger); }
+.alarm-card.media span { background: #fff8df; color: #9a6b00; }
+.alarm-card.baja span { background: #eef5ff; color: #2f6aa3; }
+
 @media (max-width: 950px) {
   .admin-layout { display: block; }
   .admin-sidebar { position: static; width: 100%; min-height: auto; }
   .admin-main { margin-left: 0; width: 100%; padding: 18px; }
-  .stats-grid, .field-grid { grid-template-columns: 1fr; }
-  .split-grid, .activity-grid, .course-grid, .teacher-card-grid, .student-admin-grid { grid-template-columns: 1fr; }
+  .stats-grid, .field-grid, .report-summary { grid-template-columns: 1fr; }
+  .split-grid, .activity-grid, .course-grid, .teacher-card-grid, .student-admin-grid, .action-grid, .alarm-grid, .help-grid, .security-grid { grid-template-columns: 1fr; }
   .wide { grid-column: auto; }
   .admin-header, .section-head, .form-actions, .header-actions { align-items: flex-start; flex-direction: column; }
+  .action-card { align-items: flex-start; flex-direction: column; }
 }

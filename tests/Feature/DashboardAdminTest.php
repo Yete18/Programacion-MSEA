@@ -37,7 +37,44 @@ class DashboardAdminTest extends TestCase
             ->assertOk()
             ->assertSee('Centralizador general')
             ->assertSee('Elencos y orquestas')
+            ->assertSee('Generacion de reportes')
+            ->assertSee('Logs de seguridad')
+            ->assertSee('Registro cabecera-detalle')
+            ->assertSee('Alarmas')
+            ->assertSee('Ayuda')
             ->assertSee('Registrar profesor');
+    }
+
+    public function test_director_puede_descargar_reporte_de_estudiantes(): void
+    {
+        $idDirector = DB::table('usuarios')->insertGetId([
+            'correo' => 'director.reportes.'.time().'@msea.test',
+            'contrasena' => Hash::make('secret123'),
+            'nombres' => 'Director',
+            'apellido_paterno' => 'Reportes',
+            'id_rol' => DB::table('roles')->where('nombre', 'director')->value('id_rol'),
+        ], 'id_usuario');
+
+        $idEstudianteUsuario = DB::table('usuarios')->insertGetId([
+            'correo' => 'estudiante.reporte.'.time().'@msea.test',
+            'contrasena' => Hash::make('secret123'),
+            'nombres' => 'Luis',
+            'apellido_paterno' => 'Mamani',
+            'id_rol' => DB::table('roles')->where('nombre', 'estudiante')->value('id_rol'),
+        ], 'id_usuario');
+
+        DB::table('estudiantes')->insert([
+            'id_usuario' => $idEstudianteUsuario,
+        ]);
+
+        $this->withSession([
+            'usuario_id' => $idDirector,
+            'rol' => 'director',
+        ])->get('/dashboard-admin/reportes/estudiantes')
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8')
+            ->assertSee('Luis Mamani', false)
+            ->assertSee('Sin elenco', false);
     }
 
     public function test_director_puede_registrar_profesor(): void

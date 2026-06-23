@@ -47,6 +47,7 @@ Route::middleware('auth.session')->group(function () {
 
     Route::middleware('role:director')->group(function () {
         Route::get('/dashboard-admin', [DashboardAdminController::class, 'show']);
+        Route::get('/dashboard-admin/reportes/{tipo}', [DashboardAdminController::class, 'downloadReport']);
         Route::post('/dashboard-admin/perfil', [DashboardAdminController::class, 'updateProfile']);
         Route::post('/dashboard-admin/profesores', [DashboardAdminController::class, 'storeProfesor']);
         Route::post('/dashboard-admin/elencos', [DashboardAdminController::class, 'storeElenco']);

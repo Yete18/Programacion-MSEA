@@ -25,7 +25,55 @@ class AdminDashboardService
             'elencosData' => $this->elencosData(),
             'estudiantesData' => $this->estudiantesData(),
             'actividadData' => $this->actividadData(),
+            'reportesData' => $this->reportesData(),
+            'seguridadData' => $this->seguridadData(),
+            'cabeceraDetalleData' => $this->cabeceraDetalleData(),
+            'ayudaData' => $this->ayudaData(),
+            'alarmasData' => $this->alarmasData(),
         ];
+    }
+
+    public function reportData(string $tipo): ?array
+    {
+        return match ($tipo) {
+            'estudiantes' => [
+                'filename' => 'reporte_estudiantes.csv',
+                'headers' => ['ID', 'Nombre', 'Correo', 'Elenco', 'Profesor'],
+                'rows' => collect($this->estudiantesData())
+                    ->map(fn ($estudiante) => [
+                        $estudiante['id'],
+                        $estudiante['nombre'],
+                        $estudiante['correo'],
+                        $estudiante['elenco'],
+                        $estudiante['profesor'],
+                    ])->all(),
+            ],
+            'profesores' => [
+                'filename' => 'reporte_profesores.csv',
+                'headers' => ['ID', 'Nombre', 'Correo', 'Especialidad', 'Celular', 'Alumnos'],
+                'rows' => collect($this->profesoresData())
+                    ->map(fn ($profesor) => [
+                        $profesor['id'],
+                        $profesor['nombre'],
+                        $profesor['correo'],
+                        $profesor['especialidad'],
+                        $profesor['celular'],
+                        $profesor['estudiantes'],
+                    ])->all(),
+            ],
+            'actividad' => [
+                'filename' => 'reporte_actividad.csv',
+                'headers' => ['Tipo', 'Titulo', 'Detalle', 'Fecha'],
+                'rows' => collect($this->actividadData()['items'])
+                    ->map(fn ($actividad) => [
+                        $actividad['tipo'],
+                        $actividad['titulo'],
+                        $actividad['detalle'],
+                        $actividad['fecha'],
+                    ])->all(),
+            ],
+            default => null,
+        };
     }
 
     public function updateProfile(int $idUsuario, array $validated): bool
@@ -372,6 +420,182 @@ class AdminDashboardService
                 'Archivos de entrega: relacionar entregas con archivos o enlaces enviados por estudiantes.',
             ],
         ];
+    }
+
+    private function reportesData(): array
+    {
+        $totalUsuarios = $this->tableCount('usuarios');
+        $totalActividad = count($this->actividadData()['items']);
+
+        return [
+            'resumen' => [
+                ['label' => 'Usuarios totales', 'value' => $totalUsuarios],
+                ['label' => 'Estudiantes', 'value' => $this->tableCount('estudiantes')],
+                ['label' => 'Profesores', 'value' => $this->tableCount('profesores')],
+                ['label' => 'Actividad reciente', 'value' => $totalActividad],
+            ],
+            'descargas' => [
+                ['tipo' => 'estudiantes', 'titulo' => 'Reporte de estudiantes', 'detalle' => 'Listado con elenco y profesor asignado.'],
+                ['tipo' => 'profesores', 'titulo' => 'Reporte de profesores', 'detalle' => 'Especialidad, contacto y alumnos vinculados.'],
+                ['tipo' => 'actividad', 'titulo' => 'Reporte de actividad', 'detalle' => 'Tareas, progreso y practicas recientes.'],
+            ],
+        ];
+    }
+
+    private function seguridadData(): array
+    {
+        if (! $this->tableExists('usuarios') || ! $this->tableExists('roles')) {
+            return ['logs' => [], 'metricas' => []];
+        }
+
+        $usuariosPorRol = DB::table('usuarios as u')
+            ->join('roles as r', 'r.id_rol', '=', 'u.id_rol')
+            ->select(['r.nombre', DB::raw('count(*) as total')])
+            ->groupBy('r.nombre')
+            ->orderBy('r.nombre')
+            ->get()
+            ->map(fn ($rol) => [
+                'label' => ucfirst($rol->nombre),
+                'value' => (int) $rol->total,
+            ])
+            ->all();
+
+        $query = DB::table('usuarios as u')
+            ->join('roles as r', 'r.id_rol', '=', 'u.id_rol')
+            ->select(['u.correo', 'u.nombres', 'u.apellido_paterno', 'r.nombre as rol']);
+
+        if ($this->columnExists('usuarios', 'ultimo_ingreso_at')) {
+            $query->addSelect('u.ultimo_ingreso_at')->orderByDesc('u.ultimo_ingreso_at');
+        } else {
+            $query->addSelect(DB::raw('null as ultimo_ingreso_at'))->orderBy('u.correo');
+        }
+
+        $logs = $query->limit(8)->get()
+            ->map(fn ($usuario) => [
+                'evento' => $usuario->ultimo_ingreso_at ? 'Ingreso correcto' : 'Sin ingreso registrado',
+                'usuario' => trim($usuario->nombres.' '.$usuario->apellido_paterno),
+                'correo' => $usuario->correo,
+                'rol' => ucfirst($usuario->rol),
+                'fecha' => $this->formatDate($usuario->ultimo_ingreso_at),
+            ])
+            ->all();
+
+        return [
+            'metricas' => $usuariosPorRol,
+            'logs' => $logs,
+        ];
+    }
+
+    private function cabeceraDetalleData(): array
+    {
+        $elencos = collect($this->elencosData())->map(function ($elenco) {
+            $detalle = collect($this->estudiantesData())
+                ->where('elenco', $elenco['nombre'])
+                ->values()
+                ->all();
+
+            return [
+                'cabecera' => $elenco['tipo'].' - '.$elenco['nombre'],
+                'subtitulo' => $elenco['estudiantes'].' estudiantes asignados',
+                'detalleTitulo' => 'Detalle de estudiantes',
+                'items' => $detalle,
+            ];
+        });
+
+        if ($elencos->isNotEmpty()) {
+            return $elencos->take(4)->values()->all();
+        }
+
+        return [[
+            'cabecera' => 'Estudiantes sin agrupacion',
+            'subtitulo' => count($this->estudiantesData()).' estudiantes registrados',
+            'detalleTitulo' => 'Detalle de estudiantes',
+            'items' => $this->estudiantesData(),
+        ]];
+    }
+
+    private function ayudaData(): array
+    {
+        return [
+            [
+                'titulo' => 'Reportes',
+                'detalle' => 'Descarga CSV para revisar estudiantes, profesores y actividad fuera del sistema.',
+            ],
+            [
+                'titulo' => 'Logs de seguridad',
+                'detalle' => 'Controla el ultimo ingreso visible por usuario y la distribucion de cuentas por rol.',
+            ],
+            [
+                'titulo' => 'Cabecera-detalle',
+                'detalle' => 'Abre cada agrupacion para revisar sus estudiantes sin salir del panel.',
+            ],
+            [
+                'titulo' => 'Alarmas',
+                'detalle' => 'Prioriza tareas vencidas, notificaciones pendientes y estudiantes sin asignacion.',
+            ],
+        ];
+    }
+
+    private function alarmasData(): array
+    {
+        $alarmas = [];
+
+        if ($this->tableExists('tareas') && $this->columnExists('tareas', 'fecha_limite')) {
+            $vencidas = DB::table('tareas')
+                ->whereNotNull('fecha_limite')
+                ->whereDate('fecha_limite', '<', now()->toDateString())
+                ->count();
+
+            if ($vencidas > 0) {
+                $alarmas[] = [
+                    'nivel' => 'Alta',
+                    'titulo' => 'Tareas vencidas',
+                    'detalle' => $vencidas.' tareas superaron su fecha limite.',
+                ];
+            }
+        }
+
+        if ($this->tableExists('notificaciones') && $this->columnExists('notificaciones', 'leida_at')) {
+            $pendientes = DB::table('notificaciones')->whereNull('leida_at')->count();
+
+            if ($pendientes > 0) {
+                $alarmas[] = [
+                    'nivel' => 'Media',
+                    'titulo' => 'Notificaciones sin leer',
+                    'detalle' => $pendientes.' notificaciones aun no fueron revisadas.',
+                ];
+            }
+        }
+
+        if ($this->tableExists('estudiantes') && $this->columnExists('estudiantes', 'id_profesor')) {
+            $sinProfesor = DB::table('estudiantes')->whereNull('id_profesor')->count();
+
+            if ($sinProfesor > 0) {
+                $alarmas[] = [
+                    'nivel' => 'Media',
+                    'titulo' => 'Estudiantes sin profesor',
+                    'detalle' => $sinProfesor.' estudiantes necesitan asignacion.',
+                ];
+            }
+        }
+
+        if ($this->tableExists('estudiantes') && $this->columnExists('estudiantes', 'id_elenco')) {
+            $sinElenco = DB::table('estudiantes')->whereNull('id_elenco')->count();
+
+            if ($sinElenco > 0) {
+                $alarmas[] = [
+                    'nivel' => 'Baja',
+                    'titulo' => 'Estudiantes sin elenco',
+                    'detalle' => $sinElenco.' estudiantes no pertenecen a una agrupacion.',
+                ];
+            }
+        }
+
+        return $alarmas ?: [[
+            'nivel' => 'Normal',
+            'titulo' => 'Sin alarmas activas',
+            'detalle' => 'No hay pendientes criticos detectados con los datos actuales.',
+        ]];
     }
 
     private function actividadTareas(): array

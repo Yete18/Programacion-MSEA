@@ -21,6 +21,30 @@ class DashboardAdminController extends Controller
         return view('dashboard-admin', $adminDashboardService->viewData((int) session('usuario_id')));
     }
 
+    public function downloadReport(string $tipo, AdminDashboardService $adminDashboardService)
+    {
+        if (session('rol') !== 'director') {
+            return redirect('/login')->with('error', 'Inicia sesion como director para continuar');
+        }
+
+        $report = $adminDashboardService->reportData($tipo);
+
+        abort_if($report === null, 404);
+
+        return response()->streamDownload(function () use ($report) {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, $report['headers']);
+
+            foreach ($report['rows'] as $row) {
+                fputcsv($output, $row);
+            }
+
+            fclose($output);
+        }, $report['filename'], [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     public function updateProfile(UpdateDirectorProfileRequest $request, AdminDashboardService $adminDashboardService)
     {
         if (session('rol') !== 'director') {

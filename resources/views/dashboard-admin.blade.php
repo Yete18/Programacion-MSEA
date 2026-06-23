@@ -23,6 +23,11 @@
       <a href="#resumen" class="active">Centralizador</a>
       <a href="#elencos">Elencos y orquestas</a>
       <a href="#actividad">Actividad</a>
+      <a href="#reportes">Reportes</a>
+      <a href="#seguridad">Seguridad</a>
+      <a href="#cabecera-detalle">Cabecera-detalle</a>
+      <a href="#alarmas">Alarmas</a>
+      <a href="#ayuda">Ayuda</a>
       <a href="#profesores">Profesores</a>
       <a href="#estudiantes">Estudiantes</a>
       <a href="#perfil">Perfil director</a>
@@ -82,6 +87,18 @@
       <div class="stat">
         <span>{{ $adminData['totalPracticas'] }}</span>
         <p>Practicas registradas</p>
+      </div>
+      <div class="stat">
+        <span>{{ count($alarmasData) }}</span>
+        <p>Alarmas activas</p>
+      </div>
+      <div class="stat">
+        <span>{{ count($seguridadData['logs']) }}</span>
+        <p>Logs de seguridad</p>
+      </div>
+      <div class="stat">
+        <span>{{ count($reportesData['descargas']) }}</span>
+        <p>Reportes disponibles</p>
       </div>
     </section>
 
@@ -241,6 +258,160 @@
             <p>{{ $pendiente }}</p>
           @endforeach
         </aside>
+      </div>
+    </section>
+
+    <section class="panel" id="reportes">
+      <div class="section-head">
+        <div>
+          <h2>Generacion de reportes</h2>
+          <p>Descarga informacion operativa en CSV para seguimiento academico y administrativo.</p>
+        </div>
+      </div>
+
+      <div class="report-summary">
+        @foreach($reportesData['resumen'] as $metric)
+          <div class="mini-stat">
+            <span>{{ $metric['value'] }}</span>
+            <p>{{ $metric['label'] }}</p>
+          </div>
+        @endforeach
+      </div>
+
+      <div class="action-grid">
+        @foreach($reportesData['descargas'] as $reporte)
+          <article class="action-card">
+            <div>
+              <h3>{{ $reporte['titulo'] }}</h3>
+              <p>{{ $reporte['detalle'] }}</p>
+            </div>
+            <a class="primary-link" href="{{ url('/dashboard-admin/reportes/'.$reporte['tipo']) }}">Descargar CSV</a>
+          </article>
+        @endforeach
+      </div>
+    </section>
+
+    <section class="panel" id="seguridad">
+      <div class="section-head">
+        <div>
+          <h2>Logs de seguridad</h2>
+          <p>Ultimos ingresos conocidos y distribucion de usuarios por rol.</p>
+        </div>
+      </div>
+
+      <div class="security-grid">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              @forelse($seguridadData['logs'] as $log)
+                <tr>
+                  <td>
+                    <strong>{{ $log['evento'] }}</strong>
+                    <small>{{ $log['correo'] }}</small>
+                  </td>
+                  <td>{{ $log['usuario'] }}</td>
+                  <td><span class="pill">{{ $log['rol'] }}</span></td>
+                  <td>{{ $log['fecha'] }}</td>
+                </tr>
+              @empty
+                <tr>
+                  <td colspan="4">Todavia no hay logs de seguridad disponibles.</td>
+                </tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+
+        <aside class="backend-notes">
+          <h3>Usuarios por rol</h3>
+          @forelse($seguridadData['metricas'] as $metric)
+            <p><strong>{{ $metric['label'] }}:</strong> {{ $metric['value'] }}</p>
+          @empty
+            <p>No hay usuarios registrados para medir seguridad.</p>
+          @endforelse
+        </aside>
+      </div>
+    </section>
+
+    <section class="panel" id="cabecera-detalle">
+      <div class="section-head">
+        <div>
+          <h2>Registro cabecera-detalle</h2>
+          <p>Consulta agrupaciones como cabecera y sus estudiantes como detalle operativo.</p>
+        </div>
+      </div>
+
+      <div class="master-detail-list">
+        @foreach($cabeceraDetalleData as $grupo)
+          <details class="master-detail-card">
+            <summary>
+              <div>
+                <h3>{{ $grupo['cabecera'] }}</h3>
+                <p>{{ $grupo['subtitulo'] }}</p>
+              </div>
+              <span class="pill">{{ count($grupo['items']) }}</span>
+            </summary>
+            <div class="master-detail-body">
+              <h4>{{ $grupo['detalleTitulo'] }}</h4>
+              @forelse($grupo['items'] as $item)
+                <article class="student-row">
+                  <div>
+                    <strong>{{ $item['nombre'] }}</strong>
+                    <span>{{ $item['correo'] }}</span>
+                  </div>
+                  <span class="pill">{{ $item['profesor'] }}</span>
+                </article>
+              @empty
+                <p class="muted-text">No hay detalle registrado para esta cabecera.</p>
+              @endforelse
+            </div>
+          </details>
+        @endforeach
+      </div>
+    </section>
+
+    <section class="panel" id="alarmas">
+      <div class="section-head">
+        <div>
+          <h2>Alarmas</h2>
+          <p>Alertas administrativas calculadas con tareas, notificaciones y asignaciones pendientes.</p>
+        </div>
+      </div>
+
+      <div class="alarm-grid">
+        @foreach($alarmasData as $alarma)
+          <article class="alarm-card {{ strtolower($alarma['nivel']) }}">
+            <span>{{ $alarma['nivel'] }}</span>
+            <h3>{{ $alarma['titulo'] }}</h3>
+            <p>{{ $alarma['detalle'] }}</p>
+          </article>
+        @endforeach
+      </div>
+    </section>
+
+    <section class="panel" id="ayuda">
+      <div class="section-head">
+        <div>
+          <h2>Ayuda</h2>
+          <p>Guia rapida para operar las nuevas funciones del panel.</p>
+        </div>
+      </div>
+
+      <div class="help-grid">
+        @foreach($ayudaData as $ayuda)
+          <article class="help-card">
+            <h3>{{ $ayuda['titulo'] }}</h3>
+            <p>{{ $ayuda['detalle'] }}</p>
+          </article>
+        @endforeach
       </div>
     </section>
 
